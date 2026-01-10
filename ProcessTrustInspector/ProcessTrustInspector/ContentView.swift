@@ -13,11 +13,16 @@ struct ContentView: View {
     
     var body: some View {
         VStack {
+            Button("Refresh") {
+                engine.refresh()
+            }
+            
             Image(systemName: "globe")
                 .imageScale(.large)
                 .foregroundStyle(.tint)
             Text("PID: \(engine.pid)")
             Text("Process Name: \(engine.processName)")
+            Text("Refreshes: \(engine.refreshCount)")
         }
         .padding()
     }
