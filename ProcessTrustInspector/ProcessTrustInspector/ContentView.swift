@@ -17,6 +17,7 @@ struct ContentView: View {
                 .imageScale(.large)
                 .foregroundStyle(.tint)
             Text("PID: \(engine.pid)")
+            Text("Process Name: \(engine.processName)")
         }
         .padding()
     }

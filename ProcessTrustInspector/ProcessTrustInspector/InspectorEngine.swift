@@ -11,8 +11,10 @@ import Observation
 @Observable
 final class InspectorEngine {
     let pid: Int32
+    let processName: String
     
     init() {
         self.pid = getpid()
+        self.processName = ProcessInfo.processInfo.processName
     }
 }
