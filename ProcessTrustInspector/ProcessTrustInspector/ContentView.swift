@@ -23,6 +23,9 @@ struct ContentView: View {
             Text("PID: \(engine.pid)")
             Text("Process Name: \(engine.processName)")
             Text("Refreshes: \(engine.refreshCount)")
+            Text("Bundle ID: \(engine.bundleIdentifier)")
+            Text("Executable Path: \(engine.execPath)")
+            
         }
         .padding()
     }
