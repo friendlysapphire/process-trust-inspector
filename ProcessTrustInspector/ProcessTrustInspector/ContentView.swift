@@ -12,22 +12,51 @@ struct ContentView: View {
     @State private var engine = InspectorEngine()
     
     var body: some View {
-        VStack {
-            Button("Refresh") {
-                engine.refresh()
+        VStack(alignment: .leading){
+            
+            HStack {
+                Button("Refresh") {
+                    engine.refresh()
+                }
             }
-            
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("PID: \(engine.pid)")
-            Text("Process Name: \(engine.processName)")
-            Text("Refreshes: \(engine.refreshCount)")
-            Text("Bundle ID: \(engine.bundleIdentifier)")
-            Text("Executable Path: \(engine.execPath)")
-            
+            HStack {
+                Text("Refreshes:")
+                Text("\(engine.refreshCount)")
+            }
+            HStack {
+                Text("PID:")
+                Text("\(engine.pid)")
+            }
+            HStack {
+                Text("Process Name:")
+                Text("\(engine.processName)")
+                    .lineLimit(nil)
+                    .multilineTextAlignment(.leading)
+                
+            }
+            HStack {
+                Text("Bundle ID:")
+                Text("\(engine.bundleIdentifier)")
+            }
+            HStack {
+                Text("Execution Path:")
+                Text("\(engine.execPath)")
+            }
         }
+        
+        VStack(alignment: .leading){
+            HStack {
+                Text("Running Application Count:")
+                Text("\(engine.runningAppCount)")
+            }
+            HStack {
+                Text("First Running App:")
+                Text("\(engine.firstRunningApp)")
+            }
+        }
+        
         .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
