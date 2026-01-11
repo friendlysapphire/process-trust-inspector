@@ -41,10 +41,13 @@ struct ContentView: View {
             HStack {
                 Text("Execution Path:")
                 Text("\(engine.execPath)")
+                    .lineLimit(nil)
+                    .multilineTextAlignment(.leading)
             }
-        }
-        
-        VStack(alignment: .leading){
+            
+            Divider()
+            
+            
             HStack {
                 Text("Running Application Count:")
                 Text("\(engine.runningAppCount)")
@@ -53,8 +56,18 @@ struct ContentView: View {
                 Text("First Running App:")
                 Text("\(engine.firstRunningApp)")
             }
+            HStack(alignment: .top) {
+                Text("Full Running Apps List:")
+                ScrollView {
+                    Text("\(engine.runningAppsListText)")
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .multilineTextAlignment(.leading)
+                }
+                .frame(maxWidth: .infinity, minHeight: 200, alignment: .leading)
+            }
         }
-        
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
     }
