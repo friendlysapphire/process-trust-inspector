@@ -23,50 +23,33 @@ struct ContentView: View {
                 Text("Refreshes:")
                 Text("\(engine.refreshCount)")
             }
-            HStack {
-                Text("PID:")
-                Text("\(engine.pid)")
-            }
-            HStack {
-                Text("Process Name:")
-                Text("\(engine.processName)")
-                    .lineLimit(nil)
-                    .multilineTextAlignment(.leading)
-                
-            }
-            HStack {
-                Text("Bundle ID:")
-                Text("\(engine.bundleIdentifier)")
-            }
-            HStack {
-                Text("Execution Path:")
-                Text("\(engine.execPath)")
-                    .lineLimit(nil)
-                    .multilineTextAlignment(.leading)
-            }
-            
-            Divider()
-            
             
             HStack {
                 Text("Running Application Count:")
                 Text("\(engine.runningAppCount)")
             }
-            HStack {
-                Text("First Running App:")
-                Text("\(engine.firstRunningApp)")
-            }
-            HStack(alignment: .top) {
-                Text("Full Running Apps List:")
-                ScrollView {
-                    Text("\(engine.runningAppsListText)")
-                        .lineLimit(nil)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .multilineTextAlignment(.leading)
+            
+            Divider()
+            
+            Text("Running Apps")
+                .font(.headline)
+           
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(engine.runningAppList) { row in
+                        VStack(alignment: .leading) {
+                            Text("\(row.pName ?? "Unknown") (\(row.pPid))")
+                            Text(row.pBundleIdentifier ?? "—")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Divider()
+                    }
                 }
-                .frame(maxWidth: .infinity, minHeight: 200, alignment: .leading)
             }
+            .frame(minHeight: 200)
+
+
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
