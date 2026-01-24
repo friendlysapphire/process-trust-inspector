@@ -23,19 +23,54 @@ struct RunningAppRow: Identifiable {
     }
 }
 
+struct ProcessSnapshot {
+    let pPid: pid_t
+    let pName: String?
+    let pBundleIdentifier: String?
+    
+    init(pPid:pid_t, pName:String?, pBI:String?) {
+        self.pPid = pPid
+        self.pName = pName
+        self.pBundleIdentifier = pBI
+    }
+    
+}
+
 @Observable
 final class InspectorEngine {
     
     var runningAppList: [RunningAppRow] = []
+    var selectedSnapshot: ProcessSnapshot? = nil
     var runningAppCount: Int = 0
     var refreshCount: Int = 0
+    var selectedPID: pid_t = 0
+    var selectionExplanationText: String = ""
+    
+    func select(pid: pid_t) {
+
+        let appList = NSWorkspace.shared.runningApplications
+        
+        guard let targetApp = appList.first(where: { $0.processIdentifier == pid }) else {
+            print("could not find app for pid \(pid)")
+            fatalError("exiting")
+        }
+        
+        selectedPID = pid
+        selectedSnapshot = ProcessSnapshot(pPid: pid,
+                                           pName: targetApp.localizedName,
+                                           pBI: targetApp.bundleIdentifier)
+        
+        
+        selectionExplanationText = "Explanatory Text accompanying this selection"
+     
+        
+    }
     
     init() {
         refresh()
     }
     
-    func refresh()
-    {
+    func refresh() {
         refreshCount += 1
         runningAppList = []
         
@@ -52,6 +87,9 @@ final class InspectorEngine {
             
             runningAppList.append(newApp)
         }
+        
         runningAppCount = runningAppList.count
     }
+    
+    
 }

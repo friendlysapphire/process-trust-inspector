@@ -42,12 +42,33 @@ struct ContentView: View {
                             Text(row.pBundleIdentifier ?? "—")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                        }
+                        } .onTapGesture { engine.select(pid: row.id) }
+                          .background(engine.selectedPID == row.id ? Color.gray.opacity(0.15) : Color.clear)
+                        
                         Divider()
                     }
                 }
             }
             .frame(minHeight: 200)
+            
+            Divider()
+
+            Text("Selected Process")
+                .font(.headline)
+
+            Text(engine.selectionExplanationText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if let s = engine.selectedSnapshot {
+                Text("PID: \(s.pPid)")
+                Text("Name: \(s.pName ?? "Unknown")")
+                Text("Bundle ID: \(s.pBundleIdentifier ?? "—")")
+            } else {
+                Text("Click a running app to inspect it.")
+                    .foregroundStyle(.secondary)
+            }
+
 
 
         }
