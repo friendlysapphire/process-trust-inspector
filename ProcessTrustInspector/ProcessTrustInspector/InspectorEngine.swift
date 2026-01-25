@@ -8,6 +8,38 @@
 import Foundation
 import Observation
 import AppKit
+import Security
+
+struct SigningSummary {
+    let teamID: String?
+    let identifier: String?
+    let status: OSStatus
+    
+    init(team:String?, id:String?, status:OSStatus) {
+        self.teamID = team
+        self.identifier = id
+        self.status = status
+    }
+}
+
+struct ProcessSnapshot {
+    let pPid: pid_t
+    let pName: String?
+    let pBundleIdentifier: String?
+    let pExecutablePath: URL?
+    let pSigningSummary: SigningSummary?
+    
+    init(pPid:pid_t, pName:String?, pBI:String?, pPidPath:URL?, signing:SigningSummary?) {
+        self.pPid = pPid
+        self.pName = pName
+        self.pBundleIdentifier = pBI
+        self.pExecutablePath = pPidPath
+        self.pSigningSummary = signing
+        
+        /*TODO: use proc_pidpath (libproc.h) to capture non-GUI apps. */
+    }
+    
+}
 
 struct RunningAppRow: Identifiable {
     let id: pid_t
@@ -23,23 +55,6 @@ struct RunningAppRow: Identifiable {
     }
 }
 
-struct ProcessSnapshot {
-    let pPid: pid_t
-    let pName: String?
-    let pBundleIdentifier: String?
-    let pExecutablePath: URL?
-    
-    init(pPid:pid_t, pName:String?, pBI:String?, pPidPath:URL?) {
-        self.pPid = pPid
-        self.pName = pName
-        self.pBundleIdentifier = pBI
-        self.pExecutablePath = pPidPath
-        
-        /*TODO: use proc_pidpath (libproc.h) to capture non-GUI apps. note: looks like it requires C buffer + withUnsafeMutableBufferPointer bridge. */
-    }
-    
-}
-
 @Observable
 final class InspectorEngine {
     
@@ -49,6 +64,37 @@ final class InspectorEngine {
     var refreshCount: Int = 0
     var selectedPID: pid_t = 0
     var selectionExplanationText: String = ""
+    
+    private func getSigningSummary(path: URL) -> SigningSummary? {
+        
+        // get the static code object representing the code at path.
+        let cfURL = path as CFURL
+        var staticCode: SecStaticCode?
+        var status = SecStaticCodeCreateWithPath(cfURL,SecCSFlags(), &staticCode)
+        
+        guard status == errSecSuccess, let staticCode else {
+            return SigningSummary(team: nil, id: nil, status: status)
+        }
+        
+        // get the signing info from that static code object
+        var signingInfo: CFDictionary?
+        status = SecCodeCopySigningInformation(
+            staticCode,
+            SecCSFlags(),          // default flags
+            &signingInfo
+        )
+        
+        guard status == errSecSuccess, let signingInfo else {
+            return SigningSummary(team: nil, id: nil, status: status)
+        }
+        
+        let info = signingInfo as NSDictionary
+        let identifier = info[kSecCodeInfoIdentifier as String] as? String
+        let teamID = info[kSecCodeInfoTeamIdentifier as String] as? String
+
+        return SigningSummary(team: teamID, id: identifier, status: status)
+        
+    }
     
     func select(pid: pid_t) {
 
@@ -60,10 +106,20 @@ final class InspectorEngine {
         }
         
         selectedPID = pid
+        let path = targetApp.executableURL
+        let signingInfo: SigningSummary?
+        
+        if let path {
+            signingInfo = self.getSigningSummary(path: path)
+        } else {
+            signingInfo = nil
+        }
+        
         selectedSnapshot = ProcessSnapshot(pPid: pid,
                                            pName: targetApp.localizedName,
                                            pBI: targetApp.bundleIdentifier,
-                                           pPidPath: targetApp.executableURL)
+                                           pPidPath: path,
+                                           signing: signingInfo)
         
         
         selectionExplanationText = """
@@ -85,7 +141,7 @@ final class InspectorEngine {
         
         self.runningAppCount =
         NSWorkspace.shared.runningApplications.count
-
+        
         let appList = NSWorkspace.shared.runningApplications
         
         for app in appList {

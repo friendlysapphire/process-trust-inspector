@@ -60,11 +60,32 @@ struct ContentView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
+            Divider()
+                .padding(.vertical, 6)
+            
+            Text("General")
+                .font(.subheadline)
+            
             if let s = engine.selectedSnapshot {
                 Text("PID: \(s.pPid)")
                 Text("Name: \(s.pName ?? "Unknown")")
                 Text("Bundle ID: \(s.pBundleIdentifier ?? "—")")
                 Text("Executable Path: \(s.pExecutablePath?.path() ?? "Unknown")")
+                
+                Divider()
+                    .padding(.vertical, 6)
+                
+                Text("Signing")
+                    .font(.subheadline)
+                
+                if let signing = s.pSigningSummary {
+                    Text("OSStatus: \(signing.status)")
+                    Text("Identifier: \(signing.identifier ?? "—")")
+                    Text("Team ID: \(signing.teamID ?? "—")")
+                } else {
+                        Text("Signing info unavailable.")
+                            .foregroundStyle(.secondary)
+                    }
             } else {
                 Text("Click a running app to inspect it.")
                     .foregroundStyle(.secondary)
