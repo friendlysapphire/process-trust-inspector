@@ -27,11 +27,15 @@ struct ProcessSnapshot {
     let pPid: pid_t
     let pName: String?
     let pBundleIdentifier: String?
+    let pExecutablePath: URL?
     
-    init(pPid:pid_t, pName:String?, pBI:String?) {
+    init(pPid:pid_t, pName:String?, pBI:String?, pPidPath:URL?) {
         self.pPid = pPid
         self.pName = pName
         self.pBundleIdentifier = pBI
+        self.pExecutablePath = pPidPath
+        
+        /*TODO: use proc_pidpath (libproc.h) to capture non-GUI apps. note: looks like it requires C buffer + withUnsafeMutableBufferPointer bridge. */
     }
     
 }
@@ -52,18 +56,23 @@ final class InspectorEngine {
         
         guard let targetApp = appList.first(where: { $0.processIdentifier == pid }) else {
             print("could not find app for pid \(pid)")
-            fatalError("exiting")
+            fatalError("fatal error: exiting")
         }
         
         selectedPID = pid
         selectedSnapshot = ProcessSnapshot(pPid: pid,
                                            pName: targetApp.localizedName,
-                                           pBI: targetApp.bundleIdentifier)
+                                           pBI: targetApp.bundleIdentifier,
+                                           pPidPath: targetApp.executableURL)
         
         
-        selectionExplanationText = "Explanatory Text accompanying this selection"
-     
-        
+        selectionExplanationText = """
+            \u{2022} This is a best-effort identity snapshot for the selected process.
+            \u{2022} PID identifies a running instance.
+            \u{2022} Bundle ID only exists for bundled apps.
+            \u{2022} Executable path tells you what binary is running and is the starting point for code-signing/trust checks.
+            \u{2022} Missing fields are normal.
+            """
     }
     
     init() {
@@ -87,9 +96,6 @@ final class InspectorEngine {
             
             runningAppList.append(newApp)
         }
-        
         runningAppCount = runningAppList.count
     }
-    
-    
 }

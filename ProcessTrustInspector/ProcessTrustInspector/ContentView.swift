@@ -64,6 +64,7 @@ struct ContentView: View {
                 Text("PID: \(s.pPid)")
                 Text("Name: \(s.pName ?? "Unknown")")
                 Text("Bundle ID: \(s.pBundleIdentifier ?? "—")")
+                Text("Executable Path: \(s.pExecutablePath?.path() ?? "Unknown")")
             } else {
                 Text("Click a running app to inspect it.")
                     .foregroundStyle(.secondary)
