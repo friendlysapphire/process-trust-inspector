@@ -10,51 +10,6 @@ import Observation
 import AppKit
 import Security
 
-struct SigningSummary {
-    let teamID: String?
-    let identifier: String?
-    let status: OSStatus
-    
-    init(team:String?, id:String?, status:OSStatus) {
-        self.teamID = team
-        self.identifier = id
-        self.status = status
-    }
-}
-
-struct ProcessSnapshot {
-    let pPid: pid_t
-    let pName: String?
-    let pBundleIdentifier: String?
-    let pExecutablePath: URL?
-    let pSigningSummary: SigningSummary?
-    
-    init(pPid:pid_t, pName:String?, pBI:String?, pPidPath:URL?, signing:SigningSummary?) {
-        self.pPid = pPid
-        self.pName = pName
-        self.pBundleIdentifier = pBI
-        self.pExecutablePath = pPidPath
-        self.pSigningSummary = signing
-        
-        /*TODO: use proc_pidpath (libproc.h) to capture non-GUI apps. */
-    }
-    
-}
-
-struct RunningAppRow: Identifiable {
-    let id: pid_t
-    let pPid: pid_t
-    let pName: String?
-    let pBundleIdentifier: String?
-    
-    init(pPid:pid_t = 0, pName:String?, pBI:String?) {
-        self.pPid = pPid
-        self.id = pPid
-        self.pName = pName
-        self.pBundleIdentifier = pBI
-    }
-}
-
 @Observable
 final class InspectorEngine {
     
@@ -80,7 +35,7 @@ final class InspectorEngine {
         var signingInfo: CFDictionary?
         status = SecCodeCopySigningInformation(
             staticCode,
-            SecCSFlags(),          // default flags
+            SecCSFlags(rawValue:kSecCSSigningInformation),          // default flags
             &signingInfo
         )
         
@@ -89,18 +44,27 @@ final class InspectorEngine {
         }
         
         let info = signingInfo as NSDictionary
+        
+        // note: test
+        print("lookng for \(kSecCodeInfoTeamIdentifier as String)")
+        for i in info.allKeys {
+            print(i)
+        }
+        // notee: /test
+        
         let identifier = info[kSecCodeInfoIdentifier as String] as? String
         let teamID = info[kSecCodeInfoTeamIdentifier as String] as? String
-
+        
         return SigningSummary(team: teamID, id: identifier, status: status)
         
     }
     
     func select(pid: pid_t) {
-
+        
         let appList = NSWorkspace.shared.runningApplications
         
         guard let targetApp = appList.first(where: { $0.processIdentifier == pid }) else {
+            // todo improve this
             print("could not find app for pid \(pid)")
             fatalError("fatal error: exiting")
         }

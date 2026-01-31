@@ -8,6 +8,13 @@
 
 /* Begin PBXFileReference section */
 		D9204D8F2F12C135003A22BA /* ProcessTrustInspector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProcessTrustInspector.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D9F819B42F2E984700AD18BA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D9F819B52F2E984700AD18BA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		D9F819B62F2E984700AD18BA /* InspectorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorEngine.swift; sourceTree = "<group>"; };
+		D9F819B72F2E984700AD18BA /* ProcessTrustInspectorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTrustInspectorApp.swift; sourceTree = "<group>"; };
+		D9F819BE2F2E9AA200AD18BA /* SingingSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingingSummary.swift; sourceTree = "<group>"; };
+		D9F819C32F2E9B1900AD18BA /* ProcessSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessSnapshot.swift; sourceTree = "<group>"; };
+		D9F819C62F2E9B8B00AD18BA /* RunningAppRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningAppRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +39,7 @@
 		D9204D862F12C135003A22BA = {
 			isa = PBXGroup;
 			children = (
-				D9204D912F12C135003A22BA /* ProcessTrustInspector */,
+				D9F819B82F2E984700AD18BA /* ProcessTrustInspector */,
 				D9204D902F12C135003A22BA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +48,39 @@
 			isa = PBXGroup;
 			children = (
 				D9204D8F2F12C135003A22BA /* ProcessTrustInspector.app */,
+				D9204D912F12C135003A22BA /* ProcessTrustInspector */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		D9F819B82F2E984700AD18BA /* ProcessTrustInspector */ = {
+			isa = PBXGroup;
+			children = (
+				D9F819C82F2E9BFC00AD18BA /* Engine */,
+				D9F819BA2F2E98D900AD18BA /* Models */,
+				D9F819B42F2E984700AD18BA /* Assets.xcassets */,
+				D9F819B52F2E984700AD18BA /* ContentView.swift */,
+				D9F819B72F2E984700AD18BA /* ProcessTrustInspectorApp.swift */,
+			);
+			path = ProcessTrustInspector;
+			sourceTree = "<group>";
+		};
+		D9F819BA2F2E98D900AD18BA /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				D9F819C62F2E9B8B00AD18BA /* RunningAppRow.swift */,
+				D9F819C32F2E9B1900AD18BA /* ProcessSnapshot.swift */,
+				D9F819BE2F2E9AA200AD18BA /* SingingSummary.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		D9F819C82F2E9BFC00AD18BA /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				D9F819B62F2E984700AD18BA /* InspectorEngine.swift */,
+			);
+			path = Engine;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
