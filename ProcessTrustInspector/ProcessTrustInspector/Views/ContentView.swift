@@ -67,8 +67,24 @@ struct ContentView: View {
                 .font(.subheadline)
             
             if let s = engine.selectedSnapshot {
+                
                 Text("PID: \(s.pPid)")
+                Text("Running User ID: \(s.pUid)")
+                
+           // experimental
+                if let ppid = s.pParentPid {
+                    if let parentName = s.pParentPidName {
+                        Text("Parent Process: \(parentName) (PID:\(ppid))")
+                    } else {
+                        Text("Parent Process PID:\(ppid) (name unknown)")
+                    }
+                } else {
+                    Text("Parent Process: None")
+                }
+            // /experiment
+                
                 Text("Name: \(s.pName ?? "Unknown")")
+                Text("Start Time: \(s.pStartTime?.formatted() ?? "Unknown")")
                 Text("Bundle ID: \(s.pBundleIdentifier ?? "—")")
                 Text("Executable Path: \(s.pExecutablePath?.path() ?? "Unknown")")
                 

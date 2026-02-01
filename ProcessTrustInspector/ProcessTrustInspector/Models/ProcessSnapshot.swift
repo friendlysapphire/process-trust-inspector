@@ -11,19 +11,14 @@ import Security
 
 struct ProcessSnapshot {
     let pPid: pid_t
+    let pUid: pid_t
+    let pParentPid: pid_t?
+    let pParentPidName: String?
     let pName: String?
+    let pStartTime: Date?
     let pBundleIdentifier: String?
     let pExecutablePath: URL?
     let pSigningSummary: SigningSummary?
     
-    init(pPid:pid_t, pName:String?, pBI:String?, pPidPath:URL?, signing:SigningSummary?) {
-        self.pPid = pPid
-        self.pName = pName
-        self.pBundleIdentifier = pBI
-        self.pExecutablePath = pPidPath
-        self.pSigningSummary = signing
-        
-        /*TODO: use proc_pidpath (libproc.h) to capture non-GUI apps. */
-    }
-    
+    var runningAsRoot:Bool { pUid == 0 ? true : false }
 }
