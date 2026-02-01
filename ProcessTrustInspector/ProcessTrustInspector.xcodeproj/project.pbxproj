@@ -16,6 +16,7 @@
 		D9F819C32F2E9B1900AD18BA /* ProcessSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessSnapshot.swift; sourceTree = "<group>"; };
 		D9F819C62F2E9B8B00AD18BA /* RunningAppRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningAppRow.swift; sourceTree = "<group>"; };
 		D9F819D12F2EA67900AD18BA /* CodeSigningInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSigningInspector.swift; sourceTree = "<group>"; };
+		D9F819DB2F2FE59B00AD18BA /* ProcessInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessInspector.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -88,6 +89,7 @@
 		D9F819CD2F2EA66A00AD18BA /* Inspectors */ = {
 			isa = PBXGroup;
 			children = (
+				D9F819DB2F2FE59B00AD18BA /* ProcessInspector.swift */,
 				D9F819D12F2EA67900AD18BA /* CodeSigningInspector.swift */,
 			);
 			path = Inspectors;

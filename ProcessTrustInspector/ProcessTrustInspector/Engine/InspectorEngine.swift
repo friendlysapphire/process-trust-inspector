@@ -2,26 +2,24 @@
 //  InspectorEngine.swift
 //  ProcessTrustInspector
 //
-// Central orchestration layer for the Process & Trust Inspector.
+// High-level State Coordinator for the Process & Trust Inspector.
 //
 // Responsibilities:
-// - Enumerate running GUI applications (via NSWorkspace)
-// - Manage selection state for a target process
-// - Produce a best-effort ProcessSnapshot for the selected PID
-// - Generate plain-English explanation text describing what is known,
-//   what is unknown, and why
+// - Maintain the source-of-truth for the UI (Selected PID, Snapshot, Metadata)
+// - Enumerate GUI applications (NSWorkspace) for the primary navigation list
+// - Orchestrate data collection by delegating to specialized inspectors
+//   (ProcessInspector, CodeSigningInspector)
+// - Transform raw process data into a human-readable narrative
 //
 // Non-responsibilities:
-// - No UI logic or presentation decisions
-// - No malware verdicts or safety claims
-// - No assumption that missing data implies trust or risk
+// - No direct kernel/syscall logic (delegated to ProcessInspector)
+// - No low-level code signing logic (delegated to CodeSigningInspector)
+// - No security verdicts or risk assessments
 //
 // Design notes:
-// - All inspection is best-effort and non-fatal
-// - Race conditions (process exit, PID reuse) are expected and handled
-// - Static code identity is derived from on-disk binaries and does NOT
-//   prove runtime behavior
-//
+// - Acts as a "Controller" in the MVVM/Observable pattern
+// - Failure-tolerant: If an inspection fails, the engine transitions to an
+//   explanatory error state rather than crashing.
 
 
 import Foundation
@@ -56,98 +54,37 @@ final class InspectorEngine {
     // MARK: - Inspectors
     
     /// Inspectors for looking into data structures
-    private let signingInspector = CodeSigningInspector()
+    private let processInspector = ProcessInspector()
     
-    /// Selects a running process by PID and attempts to build
-    /// an identity snapshot.
+    /// Coordinates the inspection of a specific process.=
+    /// This method acts as the primary bridge between the user's selection
+    /// and the low-level inspection subsystem.
     ///
-    /// Selection is intentionally non-fatal:
-    /// - The running-app list is point-in-time
-    /// - Processes may exit between render and click
-    /// - PIDs may be reused
+    /// Workflow:
+    /// 1. Updates the tracking PID for the UI.
+    /// 2. Delegates data collection to the ProcessInspector.
+    /// 3. Updates the 'narrative' (explanation text) based on the result.
     ///
-    /// On failure, the engine clears the snapshot and explains
-    /// why inspection could not be completed.
-    
+    /// - Parameter pid: The process identifier to inspect.
     func select(pid: pid_t) {
         
-        // TODO (identity): Migrate from pid_t to audit_token_t to ensure we aren't inspecting a recycled PID
-        // TODO (scope):  use proc_pidpath (libproc.h) to capture non-GUI apps if necesaery
-        
-        let appList = NSWorkspace.shared.runningApplications
-        
-        guard let targetApp = appList.first(where: { $0.processIdentifier == pid }) else {
-            // Normal race condition: process exited or list changed
-            // between enumeration and selection.
-            
-            self.selectedSnapshot = nil
-            self.selectionExplanationText = """
-                \u{2022} PID no longer exists. Process has exited since list was last refreshed.
-                """
-            self.selectedPID = pid
-            
-            return
-        }
-        
+        self.selectedSnapshot = processInspector.getProcessSnapshot(from: pid)
         self.selectedPID = pid
-        let path = targetApp.executableURL
-        let signingInfo: SigningSummary?
         
-        if let path {
-            signingInfo = self.signingInspector.getSigningSummary(path: path)
+        if let _ = self.selectedSnapshot {
+            self.selectionExplanationText = """
+                \u{2022} This is a best-effort identity snapshot for the selected process.
+                \u{2022} PID identifies a running instance.
+                \u{2022} Bundle ID only exists for bundled apps.
+                \u{2022} Executable path tells you what binary is running and is the starting point for code-signing/trust checks.
+                \u{2022} Missing fields are normal.
+                """
         } else {
-            signingInfo = nil
-        }
-        
-       // get the running user ID and parent PID from proc_pidinfo in the bowels of the os
-        
-        //int proc_pidinfo(int pid, int flavor, uint64_t arg, void *buffer, int buffersize)
-        var parentPid: pid_t? = nil
-        var processUid: pid_t = 0
-        var parentApp: NSRunningApplication? = nil
-        var parentAppName: String? = nil
-        var bsdinfo = proc_bsdinfo()
-        let bsdinfo_size = MemoryLayout<proc_bsdinfo>.size
-        var got_ppid: Int32 = 0
-        
-        withUnsafeMutablePointer(to: &bsdinfo) { ptr in
-            got_ppid = proc_pidinfo(Int32(pid),PROC_PIDTBSDINFO,0,ptr,Int32(bsdinfo_size))
-            if got_ppid == bsdinfo_size {
-                parentPid = pid_t(bitPattern: ptr.pointee.pbi_ppid)
-                processUid = pid_t(bitPattern: ptr.pointee.pbi_uid)
-            }
-        }
-        
-        // if there's a parent PID, get the associated process name
-        if let parentPid {
-            parentApp = appList.first(where: { $0.processIdentifier == parentPid })
-            if let parentApp {
-                parentAppName = parentApp.localizedName
-            }
-        
-        }
-        
-        // TODO: figure out if there's potential inconsistency/incompleteness between
-        // appList coming from NSWorkspace.shared.runningApplications and lower level info coming from
-        // proc_pidinfo
-        
-        self.selectedSnapshot = ProcessSnapshot(pPid: pid,
-                                                pUid: processUid,
-                                                pParentPid: parentPid,
-                                                pParentPidName: parentAppName,
-                                                pName: targetApp.localizedName,
-                                                pStartTime: targetApp.launchDate,
-                                                pBundleIdentifier: targetApp.bundleIdentifier,
-                                                pExecutablePath: path,
-                                                pSigningSummary: signingInfo)
-                
-        self.selectionExplanationText = """
-            \u{2022} This is a best-effort identity snapshot for the selected process.
-            \u{2022} PID identifies a running instance.
-            \u{2022} Bundle ID only exists for bundled apps.
-            \u{2022} Executable path tells you what binary is running and is the starting point for code-signing/trust checks.
-            \u{2022} Missing fields are normal.
+            self.selectionExplanationText = """
+            \u{2022} PID no longer exists. Process has exited since list was last refreshed.
             """
+        }
+        
     }
     
     
