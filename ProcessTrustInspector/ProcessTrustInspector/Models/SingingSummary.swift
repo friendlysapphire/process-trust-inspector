@@ -23,13 +23,13 @@ enum TrustCategory {
     var displayName: String {
         switch self {
         case .apple:
-            return String("Apple Software")
+            return "Apple Software"
         case .appStore:
-            return String("App Store Software")
+            return "App Store Software"
         case .developer:
-            return String("Developer (Non-App Store) Software")
+            return "Developer (Non-App Store) Software"
         case .unsigned:
-            return String("Unsigned / Untrusted")
+            return "Unsigned / Untrusted"
         }
     }
 }
