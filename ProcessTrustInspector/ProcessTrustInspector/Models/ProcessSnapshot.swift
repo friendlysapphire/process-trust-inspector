@@ -10,15 +10,20 @@ import Security
 
 
 struct ProcessSnapshot {
-    let pPid: pid_t
-    let pUid: pid_t
-    let pParentPid: pid_t?
-    let pParentPidName: String?
-    let pName: String?
-    let pStartTime: Date?
-    let pBundleIdentifier: String?
-    let pExecutablePath: URL?
-    let pSigningSummary: SigningSummary?
+    let pid: pid_t
+    let uid: pid_t
+    let parentPid: pid_t?
+    let parentPidName: String?
+    let name: String?
+    let startTime: Date?
+    let bundleIdentifier: String?
+    let executablePath: URL?
+    let signingSummary: SigningSummary?
     
-    var runningAsRoot:Bool { pUid == 0 ? true : false }
+    var runningAsRoot:Bool { return uid == 0 }
+    
+    var trustLevel: TrustCategory {
+        return signingSummary?.trustCategory ?? .unsigned
+    }
+    
 }

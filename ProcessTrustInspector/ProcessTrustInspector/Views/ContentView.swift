@@ -68,12 +68,12 @@ struct ContentView: View {
             
             if let s = engine.selectedSnapshot {
                 
-                Text("PID: \(s.pPid)")
-                Text("Running User ID: \(s.pUid)")
+                Text("PID: \(s.pid)")
+                Text("Running User ID: \(s.uid)")
                 
            // experimental
-                if let ppid = s.pParentPid {
-                    if let parentName = s.pParentPidName {
+                if let ppid = s.parentPid {
+                    if let parentName = s.parentPidName {
                         Text("Parent Process: \(parentName) (PID:\(ppid))")
                     } else {
                         Text("Parent Process PID:\(ppid) (name unknown)")
@@ -83,10 +83,10 @@ struct ContentView: View {
                 }
             // /experiment
                 
-                Text("Name: \(s.pName ?? "Unknown")")
-                Text("Start Time: \(s.pStartTime?.formatted() ?? "Unknown")")
-                Text("Bundle ID: \(s.pBundleIdentifier ?? "—")")
-                Text("Executable Path: \(s.pExecutablePath?.path() ?? "Unknown")")
+                Text("Name: \(s.name ?? "Unknown")")
+                Text("Start Time: \(s.startTime?.formatted() ?? "Unknown")")
+                Text("Bundle ID: \(s.bundleIdentifier ?? "—")")
+                Text("Executable Path: \(s.executablePath?.path() ?? "Unknown")")
                 
                 Divider()
                     .padding(.vertical, 6)
@@ -94,7 +94,9 @@ struct ContentView: View {
                 Text("Signing")
                     .font(.subheadline)
                 
-                if let signing = s.pSigningSummary {
+                Text("Trust Category: \(s.trustLevel.displayName)")
+                
+                if let signing = s.signingSummary {
                     Text("OSStatus: \(signing.status)")
                     Text("Identifier: \(signing.identifier ?? "—")")
                     Text("Team ID: \(signing.teamID ?? "—")")

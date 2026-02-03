@@ -81,8 +81,8 @@ final class ProcessInspector {
         withUnsafeMutablePointer(to: &bsdinfo) { ptr in
             got_ppid = proc_pidinfo(Int32(pid),PROC_PIDTBSDINFO,0,ptr,Int32(bsdinfo_size))
             if got_ppid == bsdinfo_size {
-                parentPid = pid_t(bitPattern: ptr.pointee.pbi_ppid)
-                processUid = pid_t(bitPattern: ptr.pointee.pbi_uid)
+                parentPid = pid_t(ptr.pointee.pbi_ppid)
+                processUid = pid_t(ptr.pointee.pbi_uid)
             }
         }
         
@@ -95,15 +95,15 @@ final class ProcessInspector {
         
         }
         
-        return ProcessSnapshot(pPid: pid,
-                               pUid: processUid,
-                               pParentPid: parentPid,
-                               pParentPidName: parentAppName,
-                               pName: targetApp.localizedName,
-                               pStartTime: targetApp.launchDate,
-                               pBundleIdentifier: targetApp.bundleIdentifier,
-                               pExecutablePath: path,
-                               pSigningSummary: signingInfo)
+        return ProcessSnapshot(pid: pid,
+                               uid: processUid,
+                               parentPid: parentPid,
+                               parentPidName: parentAppName,
+                               name: targetApp.localizedName,
+                               startTime: targetApp.launchDate,
+                               bundleIdentifier: targetApp.bundleIdentifier,
+                               executablePath: path,
+                               signingSummary: signingInfo)
         
     }
     
