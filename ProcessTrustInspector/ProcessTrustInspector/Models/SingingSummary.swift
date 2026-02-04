@@ -8,12 +8,14 @@
 //  identity for an on-disk executable.
 //
 //  This data is derived from Security.framework inspection
-//  of the executable file and does NOT prove runtime behavior.
+//  of the executable file and does not prove runtime behavior.
 
 import Foundation
 import Security
 
-/// Models the 4 foundational code signature types
+/// Models the 4 foundational code signature types.
+/// This abstraction simplifies the complex reality of macOS security into
+/// categories that are meaningful to a non-technical user.
 enum TrustCategory {
     case apple      // Signed by Apple (OS Component)
     case appStore   // Signed by Apple (App Store Distribution)
@@ -25,11 +27,26 @@ enum TrustCategory {
         case .apple:
             return "Apple Software"
         case .appStore:
-            return "App Store Software"
+            return "3rd Party App Store Software"
         case .developer:
-            return "Developer (Non-App Store) Software"
+            return "3rd Party, Non-App Store Software"
         case .unsigned:
             return "Unsigned / Untrusted"
+        }
+    }
+    
+    var explanation: String {
+        switch self {
+        case .apple:
+            return "This is signed by Apple and part of the macOS operating system."
+        case .appStore:
+            return "This app was reviewed by Apple and is sandboxed for security."
+            // TODO: developer mat or may not be sandboxed -- figure this out and give the
+            // TODO: correct answer
+        case .developer:
+            return "This app is signed by a known developer, but has not been reviewed by Apple."
+        case .unsigned:
+            return "This code has no valid signature. macOS cannot verify who created it."
         }
     }
 }
@@ -40,31 +57,48 @@ struct SigningSummary {
     let certificates: [SecCertificate]?
     let status: OSStatus
     
-    private let appStoreOID = "1.2.840.113635.100.6.1.9"
+    // computed trust level struct
+    let trustCategory: TrustCategory
+    
+    // OID (Object Identifier) for the "Mac App Store" Certificate Policy.
+    // Presence of this OID in the leaf certificate confirms App Store origin.
+    private static let appStoreOID = "1.2.840.113635.100.6.1.9"
+    private static let appleTeamID = "59GAB85EFG"
     
     init(team: String?, id: String?, certificates: [SecCertificate]?, status: OSStatus) {
         self.teamID = team
         self.identifier = id
         self.status = status
         self.certificates = certificates
+        
+        // Calculate the trust verdict immediately
+        self.trustCategory = SigningSummary.evaluateTrust(
+            status: status,
+            teamID: team,
+            identifier: id,
+            certificates: certificates)
     }
     
-    var trustCategory: TrustCategory {
+    // MARK: - Trust Evaluation Logic
+    /// Static function that takes raw signing evidence and returns a final trust category.
+    private static func evaluateTrust(status: OSStatus, teamID: String?, identifier: String?, certificates: [SecCertificate]?) -> TrustCategory {
         
-        if self.status != 0 { return .unsigned }
+        if status != 0 { return .unsigned }
         
-        if let team = self.teamID {
+        if let team = teamID {
             // there's a team string, is it an apple team string?
-            if (team == "APPLE_PLATFORM") || (team == "59GAB85EFG") {
+            if (team == "APPLE_PLATFORM") || (team == appleTeamID) {
                 return .apple
             } else {
                 // there's a team string but it doesn't look like an Apple string
                 // it's 3rd party and either app store or not app store. look at the certs
                 // to distinguish
-                guard let certs = self.certificates else {
+                guard let certs = certificates, !certs.isEmpty else {
                     return .unsigned
                 }
                 // grab the leaf node cert
+                // TODO: consider optimizing fn call by pulling out "2.5.29.32" (as CFString) here
+                // TODO: and just passing that in.
                 let certInfo = SecCertificateCopyValues(certs[0],nil,nil)
                 
                 if let cd = certInfo as? [String: Any] {
@@ -72,9 +106,6 @@ struct SigningSummary {
                     let certString = getCertString(certDict: cd)
                     
                     if let certString, certString == appStoreOID {
-                        // if we didn't get valid cert data back OR we did
-                        // but it wasn't the appStoreOid, call it .developer
-                        // (we still know it's signed w/o no error and has a team)
                         return .appStore
                     }
                 }
@@ -84,15 +115,39 @@ struct SigningSummary {
             }
         } else {
             // there's no team string, so it's either ad hoc (eg local dev, considered 'unsigned') or appl
-            if let id = self.identifier, id.hasPrefix("com.apple") {
+            if let id = identifier, id.hasPrefix("com.apple") {
                 return .apple
-            } else { return .unsigned }
+            }
+            
+            return .unsigned
         }
     }
     
-    // TODO: deal with the gross dict and return the right thing
-    private func getCertString(certDict:[String: Any]) -> String? {
-        return appStoreOID
+    /// Parses the complex dictionary returned by SecCertificateCopyValues to find the Policy OID.
+    ///
+    /// Navigation Path:
+    /// Dictionary -> Extension OID ("2.5.29.32") -> Value -> Array of Policies -> Single Policy -> OID String
+    private static func getCertString(certDict:[String: Any]) -> String? {
+        
+        // get the "Certificate Policies" extension section
+        let certPolicies = certDict["2.5.29.32"] as? [String : Any]
+        
+        guard let certPolicies, !certPolicies.isEmpty else { return nil }
+        
+        // get the list of policies inside that extension
+        let certPolicyLists = certPolicies[kSecPropertyKeyValue as String] as? [[String : Any]]
+        
+        guard let certPolicyLists, !certPolicyLists.isEmpty else { return nil }
+        
+        // iterate through all policies to find the App Store OID
+        for d in certPolicyLists {
+            
+            let id = d[kSecPropertyKeyValue as String] as? String
+            
+            if let id, id == appStoreOID {
+                return id
+            }
+        }
+        return nil
     }
-
 }
