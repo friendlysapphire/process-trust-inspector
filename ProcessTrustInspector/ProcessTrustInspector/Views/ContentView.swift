@@ -87,9 +87,11 @@ struct ContentView: View {
         } detail: {
             if let process = selectedProcess {
                 ProcessDetailView(process: process)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
                 Text("Select a process to inspect")
                     .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
         }
         .onAppear {
