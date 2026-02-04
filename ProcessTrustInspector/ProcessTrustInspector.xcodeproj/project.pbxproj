@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		D9204D8F2F12C135003A22BA /* ProcessTrustInspector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProcessTrustInspector.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D9C76F3F2F33F2F3005AA5C2 /* ProcessDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessDetailView.swift; sourceTree = "<group>"; };
 		D9F819B42F2E984700AD18BA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D9F819B52F2E984700AD18BA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		D9F819B62F2E984700AD18BA /* InspectorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorEngine.swift; sourceTree = "<group>"; };
@@ -98,6 +99,7 @@
 		D9F819D52F2EB43600AD18BA /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				D9C76F3F2F33F2F3005AA5C2 /* ProcessDetailView.swift */,
 				D9F819B52F2E984700AD18BA /* ContentView.swift */,
 			);
 			path = Views;

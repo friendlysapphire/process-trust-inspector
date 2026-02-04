@@ -29,6 +29,7 @@ import Darwin
 /// the time we fetch its info and the time we check its signature.
 final class ProcessInspector {
     
+    
     private let signingInspector = CodeSigningInspector()
     
     /// Generates a point-in-time identity snapshot for a given PID.
