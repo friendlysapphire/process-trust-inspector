@@ -21,8 +21,6 @@ struct ProcessDetailView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding(12)
-                .background(.regularMaterial)
-                .cornerRadius(10)
 
                 // Secondary: identity details
                 VStack(alignment: .leading, spacing: 8) {
