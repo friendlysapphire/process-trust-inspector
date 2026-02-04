@@ -8,18 +8,17 @@ struct ProcessDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
 
                 // Primary: narrative
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Trust Classification")
-                        .font(.headline)
-
-                    Text(process.trustLevel.displayName)
-                        .font(.title3)
-                        .fontWeight(.semibold)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
 
                     Text(process.trustLevel.explanation)
                         .font(.body)
+
+                    Text(process.trustLevel.displayName)
+                        .font(.subheadline)
                         .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(12)
                 .background(.regularMaterial)
