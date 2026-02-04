@@ -103,11 +103,7 @@ struct SigningSummary {
                 
                 if let cd = certInfo as? [String: Any] {
                     // extract the relevant cert string
-                    let certString = getCertString(certDict: cd)
-                    
-                    if let certString, certString == appStoreOID {
-                        return .appStore
-                    }
+                    if containsAppleStoreOID(certDict: cd) { return .appStore }
                 }
                 // fall through. we know we have a valid sig and team but couldn't find
                 // app store origin evidence.
@@ -123,21 +119,19 @@ struct SigningSummary {
         }
     }
     
-    /// Parses the complex dictionary returned by SecCertificateCopyValues to find the Policy OID.
-    ///
-    /// Navigation Path:
-    /// Dictionary -> Extension OID ("2.5.29.32") -> Value -> Array of Policies -> Single Policy -> OID String
-    private static func getCertString(certDict:[String: Any]) -> String? {
+    /// Parses the certificate dictionary to check if the App Store OID is present.
+    /// Returns true if found, false otherwise.
+    private static func containsAppleStoreOID(certDict:[String: Any]) -> Bool {
         
         // get the "Certificate Policies" extension section
         let certPolicies = certDict["2.5.29.32"] as? [String : Any]
         
-        guard let certPolicies, !certPolicies.isEmpty else { return nil }
+        guard let certPolicies, !certPolicies.isEmpty else { return false }
         
         // get the list of policies inside that extension
         let certPolicyLists = certPolicies[kSecPropertyKeyValue as String] as? [[String : Any]]
         
-        guard let certPolicyLists, !certPolicyLists.isEmpty else { return nil }
+        guard let certPolicyLists, !certPolicyLists.isEmpty else { return false }
         
         // iterate through all policies to find the App Store OID
         for d in certPolicyLists {
@@ -145,9 +139,9 @@ struct SigningSummary {
             let id = d[kSecPropertyKeyValue as String] as? String
             
             if let id, id == appStoreOID {
-                return id
+                return true
             }
         }
-        return nil
+        return false
     }
 }
