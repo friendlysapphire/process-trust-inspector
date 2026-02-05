@@ -133,11 +133,29 @@ final class InspectorEngine {
         func signatureStatusString(from summary: SigningSummary?) -> String? {
             guard let summary else { return nil }
             if summary.status == 0 {
-                return "Signature check: Valid"
+                return "Valid"
             } else {
-                return "Signature check: Failed (OSStatus \(summary.status))"
+                return "Failed (OSStatus \(summary.status))"
             }
         }
+        
+        func appStoreOIDEvidenceDisplay(from summary: SigningSummary?) -> (value: String?, unknownReason: String?) {
+            guard let summary else {
+                return (nil, "Signing information unavailable.")
+            }
+            
+            let evidence = summary.appStorePolicyOIDEvidence
+
+            switch evidence {
+            case .present(let oid):
+                return ("Present (\(oid))", nil)
+            case .absent:
+                return ("Not present", nil)
+            case .unknown(let reason):
+                return (nil, reason)
+            }
+        }
+
 
         // MARK: - Title
         let title = snapshot.name ?? "Process Details"
@@ -153,6 +171,15 @@ final class InspectorEngine {
                         ? "Signing information unavailable (missing executable path or inspection failure)."
                         : nil
                 ),
+
+                {
+                    let oidDisplay = appStoreOIDEvidenceDisplay(from: snapshot.signingSummary)
+                    return FactLine(
+                        label: "App Store certificate policy OID",
+                        value: oidDisplay.value,
+                        unknownReason: oidDisplay.unknownReason
+                    )
+                }(),
                 FactLine(
                     label: "Team ID",
                     value: snapshot.signingSummary?.teamID,

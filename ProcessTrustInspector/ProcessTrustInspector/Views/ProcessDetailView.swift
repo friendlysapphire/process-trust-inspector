@@ -8,7 +8,7 @@ struct ProcessDetailView: View {
             VStack(alignment: .leading, spacing: 20) {
 
                 // Trust Classification (orientation, not verdict)
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 10) {
                     Text("Trust Classification")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -23,16 +23,17 @@ struct ProcessDetailView: View {
                                     .font(.body)
                             }
                         }
+                        .padding(.top, 2)
                     }
 
                     if !narrative.trustClassification.evidence.isEmpty {
                         DisclosureGroup("Evidence") {
-                            VStack(alignment: .leading, spacing: 6) {
+                            VStack(alignment: .leading, spacing: 8) {
                                 ForEach(narrative.trustClassification.evidence) { fact in
                                     FactRow(fact: fact)
                                 }
                             }
-                            .padding(.top, 6)
+                            .padding(.top, 8)
                         }
                         .font(.subheadline)
                     }
@@ -45,6 +46,7 @@ struct ProcessDetailView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
+                        .padding(.top, 2)
                     }
                 }
                 .padding(12)
@@ -90,7 +92,7 @@ private struct SectionCard: View {
                 .font(.headline)
 
             if !section.facts.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 8) {
                     ForEach(section.facts) { fact in
                         FactRow(fact: fact)
                     }
@@ -104,6 +106,7 @@ private struct SectionCard: View {
                             .font(.body)
                     }
                 }
+                .padding(.top, 2)
             }
 
             if !section.limits.isEmpty {
@@ -114,6 +117,7 @@ private struct SectionCard: View {
                             .foregroundColor(.secondary)
                     }
                 }
+                .padding(.top, 2)
             }
         }
         .padding(12)
@@ -126,15 +130,31 @@ private struct FactRow: View {
     let fact: FactLine
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(fact.label + ":")
-                .foregroundColor(.secondary)
-                .frame(width: 140, alignment: .leading)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(fact.label + ":")
+                    .foregroundColor(.secondary)
+                    .frame(width: 170, alignment: .leading)
 
-            Text(fact.displayValue)
-                .fontWeight(.medium)
+                if let value = fact.value, !value.isEmpty {
+                    Text(value)
+                        .fontWeight(.medium)
+                } else {
+                    Text("Unknown")
+                        .foregroundColor(.secondary)
+                }
 
-            Spacer()
+                Spacer()
+            }
+
+            if (fact.value == nil || fact.value?.isEmpty == true),
+               let reason = fact.unknownReason,
+               !reason.isEmpty {
+                Text(reason)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 180) // align under value column
+            }
         }
     }
 }
