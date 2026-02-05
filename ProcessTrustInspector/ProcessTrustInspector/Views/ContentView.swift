@@ -10,7 +10,6 @@ import AppKit
 
 struct ContentView: View {
     @State private var engine = InspectorEngine()
-
     @State private var selectedCategory: TrustFilter = .all
 
     enum TrustFilter: String, CaseIterable, Identifiable {
@@ -37,7 +36,6 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             VStack(spacing: 0) {
-                // Sidebar header (filters always visible)
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Filter")
                         .font(.caption)
@@ -58,13 +56,12 @@ struct ContentView: View {
 
                 Divider()
 
-                // Sidebar list driven entirely by engine snapshot list
                 List(filteredProcesses, id: \.pid, selection: $engine.selectedPID) { process in
                     HStack {
                         Image(systemName: iconName(for: process.trustLevel))
                             .foregroundColor(color(for: process.trustLevel))
 
-                        VStack(alignment: .leading) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(process.name ?? "Unknown")
                                 .font(.headline)
                             Text(process.trustLevel.displayName)
@@ -77,9 +74,27 @@ struct ContentView: View {
                 .listStyle(.sidebar)
             }
             .navigationTitle("Process Inspector")
+            .toolbar {
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        engine.refresh()
+
+                        // If refresh makes the current selection invalid, engine will clear it.
+                        // But selection can also become hidden by the current filter; handle that.
+                        if let pid = engine.selectedPID,
+                           !filteredProcesses.contains(where: { $0.pid == pid }) {
+                            engine.clearSelection()
+                        }
+                    } label: {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                    }
+                    .help("Refresh the process list")
+                }
+            }
         } detail: {
-            if let process = engine.selectedSnapshot {
-                ProcessDetailView(process: process)
+            // Primary detail binding: Narrative model (Step 2 output contract)
+            if let narrative = engine.selectedNarrative {
+                ProcessDetailView(narrative: narrative)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
                 Text("Select a process to inspect")
@@ -88,17 +103,13 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            // If you want an explicit refresh on launch, keep this.
-            // If you prefer engine.init() to be the only refresh, you can remove this call.
             engine.refresh()
 
-            // If current selection is hidden by the filter, clear it.
             if let pid = engine.selectedPID,
                !filteredProcesses.contains(where: { $0.pid == pid }) {
                 engine.clearSelection()
             }
         }
-        // When user selects a row, drive selection through the engine
         .onChange(of: engine.selectedPID) { _, newValue in
             if let pid = newValue {
                 engine.select(pid: pid)
@@ -106,7 +117,6 @@ struct ContentView: View {
                 engine.clearSelection()
             }
         }
-        // If filter changes and hides the selected process, clear selection
         .onChange(of: selectedCategory) { _, _ in
             if let pid = engine.selectedPID,
                !filteredProcesses.contains(where: { $0.pid == pid }) {

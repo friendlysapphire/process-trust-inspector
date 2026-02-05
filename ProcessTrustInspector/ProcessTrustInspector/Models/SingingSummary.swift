@@ -98,7 +98,7 @@ struct SigningSummary {
                 }
                 // grab the leaf node cert
                 // TODO: consider optimizing fn call by pulling out "2.5.29.32" (as CFString) here
-                // TODO: and just passing that in.
+                // TODO: and just passing that in. with copy on write, not sure if that gets is anything rn
                 let certInfo = SecCertificateCopyValues(certs[0],nil,nil)
                 
                 if let cd = certInfo as? [String: Any] {
