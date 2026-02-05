@@ -9,11 +9,9 @@ import SwiftUI
 import AppKit
 
 struct ContentView: View {
-    @State private var processes: [ProcessSnapshot] = []
-    private let inspector = ProcessInspector()
+    @State private var engine = InspectorEngine()
 
     @State private var selectedCategory: TrustFilter = .all
-    @State private var selectedPID: Int32? = nil   // adjust if your pid type differs
 
     enum TrustFilter: String, CaseIterable, Identifiable {
         case all = "All"
@@ -26,31 +24,25 @@ struct ContentView: View {
     private var filteredProcesses: [ProcessSnapshot] {
         switch selectedCategory {
         case .all:
-            return processes
+            return engine.processes
         case .apple:
-            return processes.filter { $0.trustLevel == .apple }
+            return engine.processes.filter { $0.trustLevel == .apple }
         case .thirdParty:
-            return processes.filter { $0.trustLevel == .appStore || $0.trustLevel == .developer }
+            return engine.processes.filter { $0.trustLevel == .appStore || $0.trustLevel == .developer }
         case .unsigned:
-            return processes.filter { $0.trustLevel == .unsigned }
+            return engine.processes.filter { $0.trustLevel == .unsigned }
         }
-    }
-
-    private var selectedProcess: ProcessSnapshot? {
-        guard let pid = selectedPID else { return nil }
-        return processes.first { $0.pid == pid }
     }
 
     var body: some View {
         NavigationSplitView {
-            // Sidebar (filters always visible + list)
             VStack(spacing: 0) {
-                // A “mac-like” sidebar header area
+                // Sidebar header (filters always visible)
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Filter")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    
+
                     Picker("Filter", selection: $selectedCategory) {
                         ForEach(TrustFilter.allCases) { category in
                             Text(category.rawValue).tag(category)
@@ -63,14 +55,15 @@ struct ContentView: View {
                 .padding(.horizontal, 12)
                 .padding(.top, 10)
                 .padding(.bottom, 10)
-                
+
                 Divider()
-                
-                List(filteredProcesses, id: \.pid, selection: $selectedPID) { process in
+
+                // Sidebar list driven entirely by engine snapshot list
+                List(filteredProcesses, id: \.pid, selection: $engine.selectedPID) { process in
                     HStack {
                         Image(systemName: iconName(for: process.trustLevel))
                             .foregroundColor(color(for: process.trustLevel))
-                        
+
                         VStack(alignment: .leading) {
                             Text(process.name ?? "Unknown")
                                 .font(.headline)
@@ -85,7 +78,7 @@ struct ContentView: View {
             }
             .navigationTitle("Process Inspector")
         } detail: {
-            if let process = selectedProcess {
+            if let process = engine.selectedSnapshot {
                 ProcessDetailView(process: process)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
@@ -95,31 +88,31 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            loadProcesses()
-            if let pid = selectedPID, !filteredProcesses.contains(where: { $0.pid == pid }) {
-                selectedPID = nil
-            }
-        }
-        .onChange(of: selectedCategory) { _, _ in
-            if let pid = selectedPID,
+            // If you want an explicit refresh on launch, keep this.
+            // If you prefer engine.init() to be the only refresh, you can remove this call.
+            engine.refresh()
+
+            // If current selection is hidden by the filter, clear it.
+            if let pid = engine.selectedPID,
                !filteredProcesses.contains(where: { $0.pid == pid }) {
-                selectedPID = nil
+                engine.clearSelection()
             }
         }
-
-    }
-
-    private func loadProcesses() {
-        let apps = NSWorkspace.shared.runningApplications
-        var snapshots: [ProcessSnapshot] = []
-
-        for app in apps {
-            if let snapshot = inspector.getProcessSnapshot(from: app.processIdentifier) {
-                snapshots.append(snapshot)
+        // When user selects a row, drive selection through the engine
+        .onChange(of: engine.selectedPID) { _, newValue in
+            if let pid = newValue {
+                engine.select(pid: pid)
+            } else {
+                engine.clearSelection()
             }
         }
-
-        self.processes = snapshots.sorted { ($0.name ?? "") < ($1.name ?? "") }
+        // If filter changes and hides the selected process, clear selection
+        .onChange(of: selectedCategory) { _, _ in
+            if let pid = engine.selectedPID,
+               !filteredProcesses.contains(where: { $0.pid == pid }) {
+                engine.clearSelection()
+            }
+        }
     }
 
     private func iconName(for category: TrustCategory) -> String {

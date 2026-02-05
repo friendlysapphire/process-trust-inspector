@@ -31,10 +31,12 @@ import Darwin
 final class InspectorEngine {
     
     // MARK: - Published engine state (observed by Views)
-
+    
     /// Point-in-time list of running GUI applications.
     /// Derived from NSWorkspace and refreshed manually.
-    var runningAppList: [RunningAppRow] = []
+    var processes: [ProcessSnapshot] = []
+    
+    
     
     /// Snapshot for the currently selected PID, if inspection succeeds.
     /// Nil when selection fails or data is unavailable.
@@ -45,7 +47,7 @@ final class InspectorEngine {
     var selectionExplanationText: String = ""
     
     /// Currently selected PID (best-effort handle; may become stale).
-    var selectedPID: pid_t = 0
+    var selectedPID: pid_t? = nil
     
     /// Diagnostic counters for UI/debug visibility.
     var runningAppCount: Int = 0
@@ -68,25 +70,35 @@ final class InspectorEngine {
     /// - Parameter pid: The process identifier to inspect.
     func select(pid: pid_t) {
         
-        self.selectedSnapshot = processInspector.getProcessSnapshot(from: pid)
-        self.selectedPID = pid
+        // apparently if you use first() it will call the wrong first() .... wtf.
+        self.selectedSnapshot = self.processes.first {
+            $0.pid == pid
+        }
         
-        if let _ = self.selectedSnapshot {
-            self.selectionExplanationText = """
+        guard let _ = self.selectedSnapshot else {
+            self.clearSelection()
+            return
+        }
+        
+        self.selectedPID = pid
+        self.selectionExplanationText = """
                 \u{2022} This is a best-effort identity snapshot for the selected process.
                 \u{2022} PID identifies a running instance.
                 \u{2022} Bundle ID only exists for bundled apps.
                 \u{2022} Executable path tells you what binary is running and is the starting point for code-signing/trust checks.
                 \u{2022} Missing fields are normal.
                 """
-        } else {
-            self.selectionExplanationText = """
-            \u{2022} PID no longer exists. Process has exited since list was last refreshed.
-            """
-        }
+    }
+
+    
+    /// Clears out stored properties associated with previosuly selected process
+    func clearSelection() {
+        
+        selectedPID = nil
+        selectedSnapshot = nil
+        selectionExplanationText = ""
         
     }
-    
     
     /// Refreshes the point-in-time list of running GUI applications.
     ///
@@ -97,19 +109,26 @@ final class InspectorEngine {
     
     func refresh() {
         self.refreshCount += 1
-        self.runningAppList = []
+        self.processes = []
         
         let appList = NSWorkspace.shared.runningApplications
         
         for app in appList {
             
-            let newApp = RunningAppRow(pPid: app.processIdentifier,
-                                       pName: app.localizedName,
-                                       pBI:app.bundleIdentifier)
+            let newProcess = processInspector.getProcessSnapshot(from: app.processIdentifier)
             
-            runningAppList.append(newApp)
+            if let newProcess {
+                self.processes.append(newProcess)
+            }
         }
-        self.runningAppCount = self.runningAppList.count
+        // if the current selected PID isn't in the current process list (ie it has exited), clear
+        if let selectedPID = self.selectedPID {
+            if !self.processes.contains(where: { $0.pid == selectedPID }) {
+                self.clearSelection()
+            }
+        }
+        
+        self.runningAppCount = self.processes.count
     }
 
     init() {
