@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		D9204D8F2F12C135003A22BA /* ProcessTrustInspector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProcessTrustInspector.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D95F48732F36966800BD7E5F /* NarrativeBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrativeBuilder.swift; sourceTree = "<group>"; };
 		D9C76F3F2F33F2F3005AA5C2 /* ProcessDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessDetailView.swift; sourceTree = "<group>"; };
 		D9C76F422F3525BF005AA5C2 /* EngineNarrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineNarrative.swift; sourceTree = "<group>"; };
 		D9F819B42F2E984700AD18BA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -82,6 +83,7 @@
 		D9F819C82F2E9BFC00AD18BA /* Engine */ = {
 			isa = PBXGroup;
 			children = (
+				D95F48732F36966800BD7E5F /* NarrativeBuilder.swift */,
 				D9F819B62F2E984700AD18BA /* InspectorEngine.swift */,
 			);
 			path = Engine;
