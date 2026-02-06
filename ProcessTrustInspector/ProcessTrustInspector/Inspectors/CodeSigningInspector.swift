@@ -33,7 +33,7 @@ final class CodeSigningInspector {
         
         guard status == errSecSuccess, let staticCode else {
             
-            return SigningSummary(team: nil, id: nil, certificates: nil, status: status)
+            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, status: status)
         }
         
         // get the signing info from that static code object
@@ -45,23 +45,31 @@ final class CodeSigningInspector {
         )
         
         guard status == errSecSuccess, let signingInfo else {
-            return SigningSummary(team: nil, id: nil, certificates: nil, status: status)
+            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, status: status)
         }
         
         let info = signingInfo as NSDictionary
         
-#if false
-            print("looking for \(kSecCodeInfoTeamIdentifier as String)")
-            for i in info.allKeys {
-                print(i)
-            }
+#if true
+        /*
+        if let tmp = info[kSecCodeInfoEntitlementsDict] as? [String: Any] {
+            let isSandboxed = tmp["com.apple.security.app-sandbox"] as? Bool ?? false
+        }
+         */
+          
 #endif
         
         let certificates = info[kSecCodeInfoCertificates as String] as? [SecCertificate]
         let identifier = info[kSecCodeInfoIdentifier as String] as? String
         let teamID = info[kSecCodeInfoTeamIdentifier as String] as? String
+        let entitlements = info[kSecCodeInfoEntitlementsDict] as? [String: Any]
         
-        return SigningSummary(team: teamID, id: identifier, certificates: certificates, status: status)
+        
+        return SigningSummary(team: teamID,
+                              id: identifier,
+                              certificates: certificates,
+                              entitlements: entitlements,
+                              status: status)
         
     }
     

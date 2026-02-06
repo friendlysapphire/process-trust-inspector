@@ -36,8 +36,6 @@ final class InspectorEngine {
     /// Derived from NSWorkspace and refreshed manually.
     var processes: [ProcessSnapshot] = []
     
-    
-    
     /// Snapshot for the currently selected PID, if inspection succeeds.
     /// Nil when selection fails or data is unavailable.
     var selectedSnapshot: ProcessSnapshot? = nil
@@ -155,12 +153,25 @@ final class InspectorEngine {
                 return (nil, reason)
             }
         }
+        
+        func appSandboxDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
+            switch snapshot.isSandboxed {
+            case .sandboxed:
+                return ("Yes", nil)
+            case .notSandboxed:
+                return ("No", nil)
+            case .unknown(let reason):
+                return (nil, reason)
+            }
+        }
+
+
 
 
         // MARK: - Title
         let title = snapshot.name ?? "Process Details"
 
-        // MARK: - Trust Classification (orientation, not verdict)
+        // MARK: - Trust Classification (orientation)
         let trust = TrustClassificationBlock(
             label: snapshot.trustLevel.displayName,
             evidence: [
@@ -310,6 +321,28 @@ final class InspectorEngine {
                 LimitNote(text: "This describes the on-disk executable, not runtime memory state.")
             ]
         )
+        // MARK: - Runtime Constraints
+        let runtimeConstraints = NarrativeSection(
+            title: "Runtime Constraints",
+            facts: [
+                {
+                    let sbox = appSandboxDisplay(from: snapshot)
+                    return FactLine(
+                        label: "App Sandbox",
+                        value: sbox.value,
+                        unknownReason: sbox.unknownReason
+                    )
+                }()
+            ],
+            interpretation: [
+                "The App Sandbox is an opt-in containment model that restricts what an app can access by default."
+            ],
+            limits: [
+                LimitNote(text: "Sandbox status is derived from declared entitlements in the app’s code signature."),
+                LimitNote(text: "This does not describe all runtime behavior or guarantee isolation from other processes.")
+            ]
+        )
+
 
         // MARK: - Global Limits & Uncertainty (always visible)
         let globalLimits: [LimitNote] = [
@@ -322,7 +355,7 @@ final class InspectorEngine {
         return EngineNarrative(
             title: title,
             trustClassification: trust,
-            sections: [identity, signing],
+            sections: [identity, signing, runtimeConstraints],
             globalLimits: globalLimits
         )
     }

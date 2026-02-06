@@ -34,21 +34,6 @@ enum TrustCategory {
             return "Unsigned / Untrusted"
         }
     }
-    
-    var explanation: String {
-        switch self {
-        case .apple:
-            return "This is signed by Apple and part of the macOS operating system."
-        case .appStore:
-            return "This app was reviewed by Apple and is sandboxed for security."
-            // TODO: developer mat or may not be sandboxed -- figure this out and give the
-            // TODO: correct answer
-        case .developer:
-            return "This app is signed by a known developer, but has not been reviewed by Apple."
-        case .unsigned:
-            return "This code has no valid signature. macOS cannot verify who created it."
-        }
-    }
 }
 
 enum OIDEvidence {
@@ -71,8 +56,10 @@ struct SigningSummary {
     let teamID: String?
     let identifier: String?
     let certificates: [SecCertificate]?
+    let entitlements: [String: Any]?
     let appStorePolicyOIDEvidence: OIDEvidence
     let status: OSStatus
+    
 
     // computed trust level struct
     let trustCategory: TrustCategory
@@ -82,10 +69,11 @@ struct SigningSummary {
     private static let appStoreOID = "1.2.840.113635.100.6.1.9"
     private static let appleTeamID = "59GAB85EFG"
     
-    init(team: String?, id: String?, certificates: [SecCertificate]?, status: OSStatus) {
+    init(team: String?, id: String?, certificates: [SecCertificate]?, entitlements: [String: Any]?, status: OSStatus) {
         self.teamID = team
         self.identifier = id
         self.status = status
+        self.entitlements = entitlements
         self.certificates = certificates
         
         // Calculate the trust trust status
@@ -94,8 +82,6 @@ struct SigningSummary {
             teamID: team,
             identifier: id,
             certificates: certificates)
-        
-        
     }
     
     // MARK: - Trust Evaluation Logic
