@@ -164,9 +164,17 @@ final class InspectorEngine {
                 return (nil, reason)
             }
         }
-
-
-
+        
+        func hardenedRuntimeDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
+            switch snapshot.hasHardenedRuntime {
+            case .hasHardenedRuntime:
+                return ("Yes", nil)
+            case .noHardenedRuntime:
+                return ("No", nil)
+            case .unknown(let reason):
+                return (nil, reason)
+            }
+        }
 
         // MARK: - Title
         let title = snapshot.name ?? "Process Details"
@@ -332,14 +340,24 @@ final class InspectorEngine {
                         value: sbox.value,
                         unknownReason: sbox.unknownReason
                     )
+                }(),
+                {
+                    let rt = hardenedRuntimeDisplay(from: snapshot)
+                    return FactLine(
+                        label: "Hardened Runtime",
+                        value: rt.value,
+                        unknownReason: rt.unknownReason
+                    )
                 }()
             ],
             interpretation: [
-                "The App Sandbox is an opt-in containment model that restricts what an app can access by default."
+                "These signals describe declared runtime enforcement modes for the selected executable."
             ],
             limits: [
-                LimitNote(text: "Sandbox status is derived from declared entitlements in the app’s code signature."),
-                LimitNote(text: "This does not describe all runtime behavior or guarantee isolation from other processes.")
+                LimitNote(text: "Sandbox status is derived from declared entitlements in the code signature."),
+                LimitNote(text: "Hardened Runtime status is derived from code signing flags."),
+                LimitNote(text: "Apple platform binaries may not express runtime enforcement using the runtime signing flag, so ‘No’ here does not imply absence of protections."),
+                LimitNote(text: "These settings describe enforcement modes, not observed runtime behavior.")
             ]
         )
 

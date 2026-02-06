@@ -59,6 +59,7 @@ struct SigningSummary {
     let entitlements: [String: Any]?
     let appStorePolicyOIDEvidence: OIDEvidence
     let status: OSStatus
+    let hardenedRuntime: Bool?
     
 
     // computed trust level struct
@@ -69,12 +70,13 @@ struct SigningSummary {
     private static let appStoreOID = "1.2.840.113635.100.6.1.9"
     private static let appleTeamID = "59GAB85EFG"
     
-    init(team: String?, id: String?, certificates: [SecCertificate]?, entitlements: [String: Any]?, status: OSStatus) {
+    init(team: String?, id: String?, certificates: [SecCertificate]?, entitlements: [String: Any]?, runtime: Bool?, status: OSStatus) {
         self.teamID = team
         self.identifier = id
         self.status = status
         self.entitlements = entitlements
         self.certificates = certificates
+        self.hardenedRuntime = runtime
         
         // Calculate the trust trust status
         (self.trustCategory,self.appStorePolicyOIDEvidence) = SigningSummary.evaluateTrust(

@@ -33,7 +33,7 @@ final class CodeSigningInspector {
         
         guard status == errSecSuccess, let staticCode else {
             
-            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, status: status)
+            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status)
         }
         
         // get the signing info from that static code object
@@ -45,19 +45,31 @@ final class CodeSigningInspector {
         )
         
         guard status == errSecSuccess, let signingInfo else {
-            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, status: status)
+            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status)
         }
         
         let info = signingInfo as NSDictionary
         
-#if true
-        /*
-        if let tmp = info[kSecCodeInfoEntitlementsDict] as? [String: Any] {
-            let isSandboxed = tmp["com.apple.security.app-sandbox"] as? Bool ?? false
+#if false
+        
+        if let tmp = info[kSecCodeInfoFlags] as? NSNumber {
+            // turn it into an OptionSet
+            let flags = SecCodeSignatureFlags(rawValue: tmp.uint32Value)
+            print(flags.contains(SecCodeSignatureFlags.runtime))
         }
-         */
+         
           
 #endif
+        
+        let hardenedRuntime: Bool?
+        
+        // get hardened runtime status
+        if let tmp = info[kSecCodeInfoFlags] as? NSNumber {
+            let flags = SecCodeSignatureFlags(rawValue: tmp.uint32Value)
+            hardenedRuntime = flags.contains(SecCodeSignatureFlags.runtime)
+        } else { hardenedRuntime = nil }
+
+
         
         let certificates = info[kSecCodeInfoCertificates as String] as? [SecCertificate]
         let identifier = info[kSecCodeInfoIdentifier as String] as? String
@@ -65,10 +77,12 @@ final class CodeSigningInspector {
         let entitlements = info[kSecCodeInfoEntitlementsDict] as? [String: Any]
         
         
+        
         return SigningSummary(team: teamID,
                               id: identifier,
                               certificates: certificates,
                               entitlements: entitlements,
+                              runtime: hardenedRuntime,
                               status: status)
         
     }

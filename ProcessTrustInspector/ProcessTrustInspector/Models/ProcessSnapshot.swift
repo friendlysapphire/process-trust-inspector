@@ -14,6 +14,12 @@ enum AppSandboxStatus {
     case unknown(reason: String)
 }
 
+enum HardenedRuntimeStatus {
+    case hasHardenedRuntime
+    case noHardenedRuntime
+    case unknown(reason: String)
+}
+
 struct ProcessSnapshot {
     let pid: pid_t
     let uid: pid_t
@@ -36,6 +42,16 @@ struct ProcessSnapshot {
         
         let sboxed = entitlements["com.apple.security.app-sandbox"] as? Bool ?? false
         return sboxed ? .sandboxed : .notSandboxed
+    }
+    
+    var hasHardenedRuntime: HardenedRuntimeStatus {
+        
+        guard let rt = signingSummary?.hardenedRuntime else {
+            return .unknown(reason: "Unable to retrieve hardened runtime information for this process.")
+        }
+        
+        return rt ? .hasHardenedRuntime : .noHardenedRuntime
+       
     }
     
     var trustLevel: TrustCategory {
