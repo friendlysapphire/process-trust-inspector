@@ -65,14 +65,22 @@ final class ProcessInspector {
         
         let signingInfo: SigningSummary?
         let bundledStatus: BundledStatus
+        let quarantineStatus: QuarantineStatus
         
         if let path {
+            
             bundledStatus = path.absoluteString.contains(".app/Contents/MacOS/") ? BundledStatus.bundled : BundledStatus.bare
+            
             signingInfo = self.signingInspector.getSigningSummary(path: path)
+            
+            quarantineStatus = getQuarantineStatus(for: path)
+            
         } else {
             
+            quarantineStatus = .unknown(reason: "Could not determine executableURL (path) to determine quarantine status")
             signingInfo = nil
             bundledStatus = .unknown(reason: "Could not determine executableURL (path) to determine bundle status")
+            
         }
         
        // get the running user ID and parent PID from proc_pidinfo in the bowels of the os
@@ -115,8 +123,23 @@ final class ProcessInspector {
                                bundleIdentifier: targetApp.bundleIdentifier,
                                executablePath: path,
                                signingSummary: signingInfo,
-                               bundledStatus: bundledStatus)
+                               bundledStatus: bundledStatus,
+                               quarantineStatus: quarantineStatus)
         
     }
     
+    private func getQuarantineStatus(for url: URL) -> QuarantineStatus {
+        
+        let pathstr = url.path
+    
+        let result = pathstr.withCString { cpath in
+            getxattr(cpath, "com.apple.quarantine", nil, 0, 0, 0)
+        }
+        
+        if result >= 0 { return .present }
+        
+        if errno == ENOATTR { return .absent }
+        
+        else { return .unknown(reason: "getxattr failed (errno \(errno))") }
+    }
 }

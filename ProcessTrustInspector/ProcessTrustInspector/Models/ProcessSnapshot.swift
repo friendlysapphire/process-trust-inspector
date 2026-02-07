@@ -26,6 +26,12 @@ enum BundledStatus {
     case unknown(reason: String)
 }
 
+enum QuarantineStatus {
+    case present
+    case absent
+    case unknown(reason: String)
+}
+
 struct ProcessSnapshot {
     let pid: pid_t
     let uid: pid_t
@@ -37,6 +43,7 @@ struct ProcessSnapshot {
     let executablePath: URL?
     let signingSummary: SigningSummary?
     let bundledStatus: BundledStatus
+    let quarantineStatus: QuarantineStatus
     
     var runningAsRoot:Bool { return uid == 0 }
     

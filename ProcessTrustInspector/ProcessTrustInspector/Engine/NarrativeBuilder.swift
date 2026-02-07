@@ -94,6 +94,17 @@ struct NarrativeBuilder {
                 return (nil, reason)
             }
         }
+        
+        func quarantineStatusDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
+            switch snapshot.quarantineStatus {
+            case .present:
+                return ("Present", nil)
+            case .absent:
+                return ("Not present", nil)
+            case .unknown(let reason):
+                return (nil, reason)
+            }
+        }
 
         // MARK: - Title
         let title = snapshot.name ?? "Process Details"
@@ -261,7 +272,27 @@ struct NarrativeBuilder {
                 LimitNote(text: "Entitlements describe declared capabilities in the code signature; they do not indicate whether permissions were granted.")
             ]
         )
-
+        
+        let provenance = NarrativeSection(
+            title: "Provenance",
+            facts: [
+                {
+                    let q = quarantineStatusDisplay(from: snapshot)
+                    return FactLine(
+                        label: "Quarantine metadata",
+                        value: q.value,
+                        unknownReason: q.unknownReason
+                    )
+                }()
+            ],
+            interpretation: [
+                "Quarantine metadata is an origin marker that can cause Gatekeeper checks when software crosses a trust boundary (for example, downloaded from the internet)."
+            ],
+            limits: [
+                LimitNote(text: "Quarantine metadata can be removed or may be absent even for downloaded software."),
+                LimitNote(text: "Presence indicates how the file arrived, not whether it is safe.")
+            ]
+        )
         // MARK: - Runtime Constraints
         let runtimeConstraints = NarrativeSection(
             title: "Runtime Constraints",
@@ -304,7 +335,7 @@ struct NarrativeBuilder {
         return EngineNarrative(
             title: title,
             trustClassification: trust,
-            sections: [identity, signing, runtimeConstraints],
+            sections: [identity, signing, provenance, runtimeConstraints],
             globalLimits: globalLimits
         )
     }

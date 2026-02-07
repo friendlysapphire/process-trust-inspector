@@ -45,7 +45,10 @@ final class CodeSigningInspector {
         
         // get the signing info from that static code object
         var signingInfo: CFDictionary?
- 
+        
+        // NOTE: rawValue:kSecCSSigningInformation used below because apparently there's no SecCSFlag for this
+        // one, so we're doing it raw, which seems to work. not sure if I'd do this differently if I were
+        // more familiar w/ Swift or MacOS internals.
         status = SecCodeCopySigningInformation(
             staticCode,
             SecCSFlags(rawValue:kSecCSSigningInformation),
