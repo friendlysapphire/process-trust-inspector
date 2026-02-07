@@ -20,6 +20,12 @@ enum HardenedRuntimeStatus {
     case unknown(reason: String)
 }
 
+enum BundledStatus {
+    case bundled
+    case bare
+    case unknown(reason: String)
+}
+
 struct ProcessSnapshot {
     let pid: pid_t
     let uid: pid_t
@@ -30,14 +36,15 @@ struct ProcessSnapshot {
     let bundleIdentifier: String?
     let executablePath: URL?
     let signingSummary: SigningSummary?
+    let bundledStatus: BundledStatus
     
     var runningAsRoot:Bool { return uid == 0 }
     
     var isSandboxed: AppSandboxStatus {
         
         // if the structure itself is there and we have no entitlement info at all, there was an error
-        guard let entitlements = signingSummary?.entitlements else {
-            return AppSandboxStatus.unknown(reason: "Unable to retrieve entitlements data structure for this process.")
+        guard let entitlements = signingSummary?.entitlementsDict else {
+            return AppSandboxStatus.unknown(reason: "Unable to retrieve entitlements dictionary structure for this process.")
         }
         
         let sboxed = entitlements["com.apple.security.app-sandbox"] as? Bool ?? false

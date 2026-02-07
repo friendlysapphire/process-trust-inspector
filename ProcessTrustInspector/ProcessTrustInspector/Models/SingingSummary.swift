@@ -14,7 +14,7 @@ import Foundation
 import Security
 
 /// Models the 4 foundational code signature types.
-/// This abstraction simplifies the complex reality of macOS security into
+/// This abstraction simplifies macOS app security foundations into
 /// categories that are meaningful to a non-technical user.
 enum TrustCategory {
     case apple      // Signed by Apple (OS Component)
@@ -52,28 +52,37 @@ enum OIDEvidence {
     }
 }
 
+enum EntitlementsEvidence {
+    case present
+    case absent
+    case unknown(reason: String)
+}
+    
+
 struct SigningSummary {
     let teamID: String?
     let identifier: String?
     let certificates: [SecCertificate]?
-    let entitlements: [String: Any]?
+    let entitlementsDict: [String: Any]?
     let appStorePolicyOIDEvidence: OIDEvidence
     let status: OSStatus
     let hardenedRuntime: Bool?
+    let entitlementsEvidence: EntitlementsEvidence
     
 
     // computed trust level struct
     let trustCategory: TrustCategory
     
-    init(team: String?, id: String?, certificates: [SecCertificate]?, entitlements: [String: Any]?, runtime: Bool?, status: OSStatus, trustCategory: TrustCategory, appStorePolicyOIDEvidence: OIDEvidence) {
+    init(team: String?, id: String?, certificates: [SecCertificate]?, entitlements: [String: Any]?, runtime: Bool?, status: OSStatus, trustCategory: TrustCategory, appStorePolicyOIDEvidence: OIDEvidence, entitlementsEvidence: EntitlementsEvidence) {
         self.teamID = team
         self.identifier = id
         self.status = status
-        self.entitlements = entitlements
+        self.entitlementsDict = entitlements
         self.certificates = certificates
         self.hardenedRuntime = runtime
         self.trustCategory = trustCategory
         self.appStorePolicyOIDEvidence = appStorePolicyOIDEvidence
+        self.entitlementsEvidence = entitlementsEvidence
     }
 }
 

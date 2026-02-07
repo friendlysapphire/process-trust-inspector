@@ -9,6 +9,13 @@ import Foundation
 import Security
 
 
+
+// TODO: signing inspection path conflates “unsigned” with “inspection unavailable” in some failure cases.
+// (SecStaticCodeCreateWithPath fails, SecCodeCopySigningInformation fails)
+// probably means adding .unknown(str) to TC enum
+// Revisit in cleanup to v1 release
+
+
 final class CodeSigningInspector {
     
     /// Returns a best-effort static code identity summary for the
@@ -32,22 +39,25 @@ final class CodeSigningInspector {
         var status = SecStaticCodeCreateWithPath(cfURL,SecCSFlags(), &staticCode)
         
         guard status == errSecSuccess, let staticCode else {
-            
-            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status, trustCategory: .unsigned, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signagure check failed"))
+            //SecStaticCodeCreateWithPath reports failure
+            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status, trustCategory: .unsigned, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signagure check failed"), entitlementsEvidence: EntitlementsEvidence.unknown(reason: "Signature check failed"))
         }
         
         // get the signing info from that static code object
         var signingInfo: CFDictionary?
+ 
         status = SecCodeCopySigningInformation(
             staticCode,
-            SecCSFlags(rawValue:kSecCSSigningInformation),          // default flags
+            SecCSFlags(rawValue:kSecCSSigningInformation),
             &signingInfo
         )
         
         guard status == errSecSuccess, let signingInfo else {
-            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status, trustCategory: .unsigned, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signing information unavailable."))
+            //SecCodeCopySigningInformation fails
+            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status, trustCategory: .unsigned, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signing information unavailable."), entitlementsEvidence: EntitlementsEvidence.unknown(reason: "Signing information unavailable"))
         }
         
+        // info is our master srtucture w/ signing info from the OS here
         let info = signingInfo as NSDictionary
         
 #if false
@@ -57,10 +67,10 @@ final class CodeSigningInspector {
             let flags = SecCodeSignatureFlags(rawValue: tmp.uint32Value)
             print(flags.contains(SecCodeSignatureFlags.runtime))
         }
-         
-          
-#endif
         
+        
+#endif
+        // sort out hardened runtime
         let hardenedRuntime: Bool?
         
         // get hardened runtime status
@@ -68,21 +78,37 @@ final class CodeSigningInspector {
             let flags = SecCodeSignatureFlags(rawValue: tmp.uint32Value)
             hardenedRuntime = flags.contains(SecCodeSignatureFlags.runtime)
         } else { hardenedRuntime = nil }
-
-
         
+        
+        // sort out some easy ones
         let certificates = info[kSecCodeInfoCertificates as String] as? [SecCertificate]
         let identifier = info[kSecCodeInfoIdentifier as String] as? String
         let teamID = info[kSecCodeInfoTeamIdentifier as String] as? String
         let entitlements = info[kSecCodeInfoEntitlementsDict] as? [String: Any]
         
-        // Calculate the trust status
+        // Calculate the fundamental trust category (apple, app store, 3p dev not appstore, unknown)
         let (trustCategory, oidEvidence) = evaluateTrust(
             status: status,
             teamID: teamID,
             identifier: identifier,
             certificates: certificates)
         
+        //sort out entitlements evidence
+        let entitlementsEvidence: EntitlementsEvidence
+        // entitlemetns can be in the standard dict or in the below weird alternate place in cases I don't
+        // understand
+        let entitlementsAlt = info[kSecCodeInfoEntitlements] as? NSData
+        // present if if entitlements has at least 1 key or kSecCodeInfoEntitlements is not nil
+        // else absent
+        if entitlementsAlt != nil {
+            entitlementsEvidence = EntitlementsEvidence.present
+        } else {
+            if let e = entitlements {
+                entitlementsEvidence = e.isEmpty ? EntitlementsEvidence.absent :  EntitlementsEvidence.present
+            } else {
+                entitlementsEvidence = EntitlementsEvidence.absent
+            }
+        }
         
         
         return SigningSummary(team: teamID,
@@ -92,7 +118,8 @@ final class CodeSigningInspector {
                               runtime: hardenedRuntime,
                               status: status,
                               trustCategory: trustCategory,
-                              appStorePolicyOIDEvidence: oidEvidence)
+                              appStorePolicyOIDEvidence: oidEvidence,
+                              entitlementsEvidence: entitlementsEvidence)
         
     }
     

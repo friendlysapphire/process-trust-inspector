@@ -69,6 +69,32 @@ struct NarrativeBuilder {
             }
         }
 
+        func entitlementsEvidenceDisplay(from summary: SigningSummary?) -> (value: String?, unknownReason: String?) {
+            guard let summary else {
+                return (nil, "Signing information unavailable.")
+            }
+
+            switch summary.entitlementsEvidence {
+            case .present:
+                return ("Present", nil)
+            case .absent:
+                return ("Not present", nil)
+            case .unknown(let reason):
+                return (nil, reason)
+            }
+        }
+        
+        func bundledStatusDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
+            switch snapshot.bundledStatus {
+            case .bundled:
+                return ("Yes", nil)
+            case .bare:
+                return ("No", nil)
+            case .unknown(let reason):
+                return (nil, reason)
+            }
+        }
+
         // MARK: - Title
         let title = snapshot.name ?? "Process Details"
 
@@ -145,16 +171,21 @@ struct NarrativeBuilder {
                     unknownReason: snapshot.parentPidName == nil
                         ? "Parent process name not visible via NSWorkspace."
                         : nil
-                ),
-
-                FactLine(
+                ),FactLine(
                     label: "Bundle identifier",
                     value: snapshot.bundleIdentifier,
                     unknownReason: snapshot.bundleIdentifier == nil
-                        ? "Not a bundled application or metadata unavailable."
+                        ? "No bundle identifier was available for this process."
                         : nil
                 ),
-
+                {
+                    let b = bundledStatusDisplay(from: snapshot)
+                    return FactLine(
+                        label: "Bundled application",
+                        value: b.value,
+                        unknownReason: b.unknownReason
+                    )
+                }(),
                 FactLine(
                     label: "Executable path",
                     value: snapshot.executablePath?.path,
@@ -211,14 +242,23 @@ struct NarrativeBuilder {
                     unknownReason: snapshot.signingSummary == nil
                         ? "Signing information unavailable."
                         : nil
-                )
+                ),
+                {
+                    let e = entitlementsEvidenceDisplay(from: snapshot.signingSummary)
+                    return FactLine(
+                        label: "Entitlements",
+                        value: e.value,
+                        unknownReason: e.unknownReason
+                    )
+                }()
             ],
             interpretation: [
                 "Code signing provides a stable identity for the executable and supports integrity checks."
             ],
             limits: [
                 LimitNote(text: "A valid signature does not imply safety or benign behavior."),
-                LimitNote(text: "This describes the on-disk executable, not runtime memory state.")
+                LimitNote(text: "This describes the on-disk executable, not runtime memory state."),
+                LimitNote(text: "Entitlements describe declared capabilities in the code signature; they do not indicate whether permissions were granted.")
             ]
         )
 

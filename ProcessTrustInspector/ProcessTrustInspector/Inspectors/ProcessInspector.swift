@@ -57,12 +57,22 @@ final class ProcessInspector {
     
         // marshal a bunch more data for the ProcessSnapShot we're going to construct and return
         let path = targetApp.executableURL
+        
+ 
+        //   bundled if the executable path is inside *.app/Contents/MacOS/
+        // Bare otherwise
+        
+        
         let signingInfo: SigningSummary?
+        let bundledStatus: BundledStatus
         
         if let path {
+            bundledStatus = path.absoluteString.contains(".app/Contents/MacOS/") ? BundledStatus.bundled : BundledStatus.bare
             signingInfo = self.signingInspector.getSigningSummary(path: path)
         } else {
+            
             signingInfo = nil
+            bundledStatus = .unknown(reason: "Could not determine executableURL (path) to determine bundle status")
         }
         
        // get the running user ID and parent PID from proc_pidinfo in the bowels of the os
@@ -104,7 +114,8 @@ final class ProcessInspector {
                                startTime: targetApp.launchDate,
                                bundleIdentifier: targetApp.bundleIdentifier,
                                executablePath: path,
-                               signingSummary: signingInfo)
+                               signingSummary: signingInfo,
+                               bundledStatus: bundledStatus)
         
     }
     
