@@ -105,6 +105,43 @@ struct NarrativeBuilder {
                 return (nil, reason)
             }
         }
+        
+        func gatekeeperRelevanceDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?)
+        {
+
+            // If quarantine is present, Gatekeeper relevance is straightforward.
+            switch snapshot.quarantineStatus {
+            case .present:
+                return ("Likely (quarantine metadata present)", nil)
+            case .unknown(let reason):
+                return (nil, reason)
+            case .absent:
+                break
+            }
+
+            // If we can't tell what form this is, we can't say much.
+            switch snapshot.bundledStatus {
+            case .unknown(let reason):
+                return (nil, reason)
+            case .bare:
+                return ("Unlikely (not an app bundle)", nil)
+            case .bundled:
+                break
+            }
+
+            // Bundled app with no quarantine metadata: Gatekeeper may or may not have evaluated it.
+            // Use trust category to keep the story honest and non-alarmist.
+            switch snapshot.signingSummary?.trustCategory {
+            case .some(.appStore), .some(.apple):
+                return ("Unlikely (platform/App Store distribution)", nil)
+            case .some(.developer):
+                return ("Possible (Developer ID app; no quarantine metadata observed)", nil)
+            case .some(.unsigned):
+                return ("Possible (unsigned app bundle; no quarantine metadata observed)", nil)
+            case .none:
+                return ("Possible (app bundle; signing information unavailable)", nil)
+            }
+        }
 
         // MARK: - Title
         let title = snapshot.name ?? "Process Details"
@@ -283,14 +320,22 @@ struct NarrativeBuilder {
                         value: q.value,
                         unknownReason: q.unknownReason
                     )
+                }(),
+                {
+                    let gk = gatekeeperRelevanceDisplay(from: snapshot)
+                    return FactLine(
+                        label: "Gatekeeper relevance",
+                        value: gk.value,
+                        unknownReason: gk.unknownReason
+                    )
                 }()
             ],
             interpretation: [
-                "Quarantine metadata is an origin marker that can cause Gatekeeper checks when software crosses a trust boundary (for example, downloaded from the internet)."
+                "These signals describe provenance and whether macOS Gatekeeper checks are likely to apply."
             ],
             limits: [
-                LimitNote(text: "Quarantine metadata can be removed or may be absent even for downloaded software."),
-                LimitNote(text: "Presence indicates how the file arrived, not whether it is safe.")
+                LimitNote(text: "Quarantine metadata may be absent or removed; absence does not imply local origin or safety."),
+                LimitNote(text: "This does not perform a Gatekeeper assessment and does not determine notarization status.")
             ]
         )
         // MARK: - Runtime Constraints
