@@ -11,7 +11,7 @@ import AppKit
 struct ContentView: View {
     @State private var engine = InspectorEngine()
     @State private var selectedCategory: TrustFilter = .all
-
+    
     enum TrustFilter: String, CaseIterable, Identifiable {
         case all = "All"
         case apple = "Apple"
@@ -19,7 +19,7 @@ struct ContentView: View {
         case unsigned = "Unsigned"
         var id: String { self.rawValue }
     }
-
+    
     private var filteredProcesses: [ProcessSnapshot] {
         switch selectedCategory {
         case .all:
@@ -32,7 +32,7 @@ struct ContentView: View {
             return engine.processes.filter { $0.trustLevel == .unsigned }
         }
     }
-
+    
     var body: some View {
         NavigationSplitView {
             VStack(spacing: 0) {
@@ -40,7 +40,7 @@ struct ContentView: View {
                     Text("Filter")
                         .font(.caption)
                         .foregroundColor(.secondary)
-
+                    
                     Picker("Filter", selection: $selectedCategory) {
                         ForEach(TrustFilter.allCases) { category in
                             Text(category.rawValue).tag(category)
@@ -53,14 +53,14 @@ struct ContentView: View {
                 .padding(.horizontal, 12)
                 .padding(.top, 10)
                 .padding(.bottom, 10)
-
+                
                 Divider()
-
+                
                 List(filteredProcesses, id: \.pid, selection: $engine.selectedPID) { process in
                     HStack {
                         Image(systemName: iconName(for: process.trustLevel))
                             .foregroundColor(color(for: process.trustLevel))
-
+                        
                         VStack(alignment: .leading, spacing: 2) {
                             Text(process.name ?? "Unknown")
                                 .font(.headline)
@@ -78,7 +78,7 @@ struct ContentView: View {
                 ToolbarItem(placement: .automatic) {
                     Button {
                         engine.refresh()
-
+                        
                         // If refresh makes the current selection invalid, engine will clear it.
                         // But selection can also become hidden by the current filter; handle that.
                         if let pid = engine.selectedPID,
@@ -104,7 +104,7 @@ struct ContentView: View {
         }
         .onAppear {
             engine.refresh()
-
+            
             if let pid = engine.selectedPID,
                !filteredProcesses.contains(where: { $0.pid == pid }) {
                 engine.clearSelection()
@@ -124,22 +124,32 @@ struct ContentView: View {
             }
         }
     }
-
+    
     private func iconName(for category: TrustCategory) -> String {
         switch category {
-        case .apple: return "applelogo"
-        case .appStore: return "checkmark.seal.fill"
-        case .developer: return "person.crop.circle.badge.checkmark"
-        case .unsigned: return "exclamationmark.triangle.fill"
+        case .apple:
+            return "applelogo"
+        case .appStore:
+            return "checkmark.seal.fill"
+        case .developer:
+            return "person.crop.circle.badge.checkmark"
+        case .unsigned:
+            return "exclamationmark.triangle.fill"
+        case .unknown:
+            return "questionmark.circle.fill"
         }
     }
-
+    
     private func color(for category: TrustCategory) -> Color {
         switch category {
-        case .apple: return .gray
-        case .appStore, .developer: return .blue
-        case .unsigned: return .orange
+        case .apple:
+            return .gray
+        case .appStore, .developer:
+            return .blue
+        case .unsigned:
+            return .orange
+        case .unknown:
+            return .secondary
         }
     }
 }
-

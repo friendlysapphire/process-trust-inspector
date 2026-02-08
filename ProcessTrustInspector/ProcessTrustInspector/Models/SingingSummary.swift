@@ -21,6 +21,7 @@ enum TrustCategory {
     case appStore   // Signed by Apple (App Store Distribution)
     case developer  // Signed by Developer ID (Direct Distribution)
     case unsigned   // Ad-hoc or Broken Signature
+    case unknown    // something failed
     
     var displayName: String {
         switch self {
@@ -31,7 +32,9 @@ enum TrustCategory {
         case .developer:
             return "3rd Party, Non-App Store Software"
         case .unsigned:
-            return "Unsigned / Untrusted"
+            return "Unsigned or Ad-hoc (No Publisher Identity)"
+        case .unknown:
+            return "Signature check failed"
         }
     }
 }

@@ -40,7 +40,7 @@ final class CodeSigningInspector {
         
         guard status == errSecSuccess, let staticCode else {
             //SecStaticCodeCreateWithPath reports failure
-            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status, trustCategory: .unsigned, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signagure check failed"), entitlementsEvidence: EntitlementsEvidence.unknown(reason: "Signature check failed"))
+            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status, trustCategory: .unknown, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signagure check failed"), entitlementsEvidence: EntitlementsEvidence.unknown(reason: "Signature check failed"))
         }
         
         // get the signing info from that static code object
@@ -57,7 +57,7 @@ final class CodeSigningInspector {
         
         guard status == errSecSuccess, let signingInfo else {
             //SecCodeCopySigningInformation fails
-            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status, trustCategory: .unsigned, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signing information unavailable."), entitlementsEvidence: EntitlementsEvidence.unknown(reason: "Signing information unavailable"))
+            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status, trustCategory: .unknown, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signing information unavailable."), entitlementsEvidence: EntitlementsEvidence.unknown(reason: "Signing information unavailable"))
         }
         
         // info is our master srtucture w/ signing info from the OS here
@@ -135,7 +135,7 @@ final class CodeSigningInspector {
     /// Static function that takes raw signing evidence and returns a final trust category.
     private func evaluateTrust(status: OSStatus, teamID: String?, identifier: String?, certificates: [SecCertificate]?) -> (TrustCategory,OIDEvidence) {
         
-        if status != 0 { return (.unsigned, OIDEvidence.unknown(reason: "Signagure check failed"))}
+        if status != 0 { return (.unknown, OIDEvidence.unknown(reason: "Signagure check failed"))}
         
         if let team = teamID {
             // there's a team string, is it an apple team string?
@@ -146,7 +146,7 @@ final class CodeSigningInspector {
                 // it's 3rd party and either app store or not app store. look at the certs
                 // to distinguish
                 guard let certs = certificates, !certs.isEmpty else {
-                    return (.unsigned,OIDEvidence.unknown(reason:"Certificate information was unavailable for inspection."))
+                    return (.unknown,OIDEvidence.unknown(reason:"Certificate information was unavailable for inspection."))
                 }
                 // grab the leaf node cert
                 // TODO: consider optimizing fn call by pulling out "2.5.29.32" (as CFString) here
