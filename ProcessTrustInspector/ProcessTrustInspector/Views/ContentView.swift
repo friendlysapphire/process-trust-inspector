@@ -11,31 +11,42 @@ import AppKit
 struct ContentView: View {
     @State private var engine = InspectorEngine()
     @State private var selectedCategory: TrustFilter = .all
-    
+
     enum TrustFilter: String, CaseIterable, Identifiable {
         case all = "All"
         case apple = "Apple"
         case thirdParty = "3rd Party"
         case unsigned = "No Publisher Identity"
+        case unknown = "Signature Check Failed"
+
         var id: String { self.rawValue }
     }
-    
+
     private var filteredProcesses: [ProcessSnapshot] {
         switch selectedCategory {
         case .all:
             return engine.processes
+
         case .apple:
             return engine.processes.filter { $0.trustLevel == .apple }
+
         case .thirdParty:
-            return engine.processes.filter { $0.trustLevel == .appStore || $0.trustLevel == .developer }
-        case .unsigned:
             return engine.processes.filter {
-                $0.trustLevel == .unsigned || $0.trustLevel == .unknown
+                $0.trustLevel == .appStore || $0.trustLevel == .developer
             }
 
+        case .unsigned:
+            return engine.processes.filter {
+                $0.trustLevel == .unsigned
+            }
+
+        case .unknown:
+            return engine.processes.filter {
+                $0.trustLevel == .unknown
+            }
         }
     }
-    
+
     var body: some View {
         NavigationSplitView {
             VStack(spacing: 0) {
@@ -43,7 +54,7 @@ struct ContentView: View {
                     Text("Filter")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    
+
                     Picker("Filter", selection: $selectedCategory) {
                         ForEach(TrustFilter.allCases) { category in
                             Text(category.rawValue).tag(category)
@@ -56,17 +67,18 @@ struct ContentView: View {
                 .padding(.horizontal, 12)
                 .padding(.top, 10)
                 .padding(.bottom, 10)
-                
+
                 Divider()
-                
+
                 List(filteredProcesses, id: \.pid, selection: $engine.selectedPID) { process in
                     HStack {
                         Image(systemName: iconName(for: process.trustLevel))
                             .foregroundColor(color(for: process.trustLevel))
-                        
+
                         VStack(alignment: .leading, spacing: 2) {
                             Text(process.name ?? "Unknown")
                                 .font(.headline)
+
                             Text(process.trustLevel.displayName)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -81,9 +93,7 @@ struct ContentView: View {
                 ToolbarItem(placement: .automatic) {
                     Button {
                         engine.refresh()
-                        
-                        // If refresh makes the current selection invalid, engine will clear it.
-                        // But selection can also become hidden by the current filter; handle that.
+
                         if let pid = engine.selectedPID,
                            !filteredProcesses.contains(where: { $0.pid == pid }) {
                             engine.clearSelection()
@@ -95,7 +105,6 @@ struct ContentView: View {
                 }
             }
         } detail: {
-            // Primary detail binding: Narrative model (Step 2 output contract)
             if let narrative = engine.selectedNarrative {
                 ProcessDetailView(narrative: narrative)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -107,7 +116,7 @@ struct ContentView: View {
         }
         .onAppear {
             engine.refresh()
-            
+
             if let pid = engine.selectedPID,
                !filteredProcesses.contains(where: { $0.pid == pid }) {
                 engine.clearSelection()
@@ -127,7 +136,7 @@ struct ContentView: View {
             }
         }
     }
-    
+
     private func iconName(for category: TrustCategory) -> String {
         switch category {
         case .apple:
@@ -142,7 +151,7 @@ struct ContentView: View {
             return "questionmark.circle.fill"
         }
     }
-    
+
     private func color(for category: TrustCategory) -> Color {
         switch category {
         case .apple:
