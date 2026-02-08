@@ -16,7 +16,7 @@ struct ProcessDetailView: View {
                             .foregroundColor(.secondary)
 
                         // Single Text node so drag-selection works naturally.
-                        Text(narrative.summary.joined(separator: "\n\n"))
+                        Text(styledSummaryText(from: narrative.summary))
                             .font(.body)
                     }
                     .padding(12)
@@ -88,6 +88,39 @@ struct ProcessDetailView: View {
             .textSelection(.enabled)
         }
         .navigationTitle(narrative.title)
+    }
+
+    // MARK: - Summary styling (single Text node; no string changes)
+
+    private func styledSummaryText(from lines: [String]) -> AttributedString {
+        // Exact header strings produced by NarrativeBuilder (no colons).
+        let headerLines: Set<String> = [
+            "Overview",
+            "Runtime constraints",
+            "Provenance"
+        ]
+
+        var result = AttributedString()
+
+        for (idx, rawLine) in lines.enumerated() {
+            let isHeader = headerLines.contains(rawLine)
+
+            var line = AttributedString(rawLine)
+            if isHeader {
+                line.font = .headline
+            } else {
+                line.font = .body
+            }
+
+            // Preserve your existing blank line separation.
+            result.append(line)
+
+            if idx < lines.count - 1 {
+                result.append(AttributedString("\n\n"))
+            }
+        }
+
+        return result
     }
 }
 
@@ -263,9 +296,9 @@ private struct RuntimeConstraintRow: View {
 // MARK: - Provenance
 
 private enum ProvenanceStatus: Equatable {
-    case present            // ✅ observed
-    case absent             // ❌ observed absent
-    case inferred(note: String?) // ❓ conditional/inferred
+    case present                  // ✅ observed
+    case absent                   // ❌ observed absent
+    case inferred(note: String?)  // ❓ conditional/inferred
     case unknown(reason: String?) // ⚠️ unavailable
 }
 
@@ -454,6 +487,7 @@ private struct ProvenanceRow: View {
 }
 
 // MARK: - Fact rows (everything else)
+
 private struct FactRow: View {
     let fact: FactLine
 

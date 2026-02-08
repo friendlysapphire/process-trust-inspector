@@ -32,7 +32,7 @@ struct NarrativeBuilder {
 
         func appStoreOIDEvidenceDisplay(from summary: SigningSummary?) -> (value: String?, unknownReason: String?) {
             guard let summary else {
-                return (nil, "Signing information unavailable.")
+                return (nil, "Signing information unavailable (inspection limits).")
             }
 
             let evidence = summary.appStorePolicyOIDEvidence
@@ -71,9 +71,8 @@ struct NarrativeBuilder {
 
         func entitlementsEvidenceDisplay(from summary: SigningSummary?) -> (value: String?, unknownReason: String?) {
             guard let summary else {
-                return (nil, "Signing information unavailable.")
+                return (nil, "Signing information unavailable (inspection limits).")
             }
-
             switch summary.entitlementsEvidence {
             case .present:
                 return ("Present", nil)
@@ -133,6 +132,9 @@ struct NarrativeBuilder {
         func buildSummary(from snapshot: ProcessSnapshot) -> [String] {
             var lines: [String] = []
 
+            // 0) Summary header
+            lines.append("Overview")
+
             // 1) What it is (best-effort identity)
             if let name = snapshot.name, !name.isEmpty {
                 if let bundleID = snapshot.bundleIdentifier, !bundleID.isEmpty {
@@ -149,13 +151,13 @@ struct NarrativeBuilder {
 
             // 3) Signature status
             if let summary = snapshot.signingSummary {
-                if summary.status == 0 {
-                    lines.append("Code signature check: Passed")
-                } else {
-                    lines.append("Code signature check: Failed (OSStatus \(summary.status))")
-                }
+                lines.append(
+                    summary.status == 0
+                    ? "Code signature: Valid"
+                    : "Code signature: Failed (OSStatus \(summary.status))"
+                )
             } else {
-                lines.append("Code signature check: Unavailable (missing executable path or inspection limits)")
+                lines.append("Code signature: Unavailable")
             }
 
             // MARK: - Summary icon helpers
@@ -188,7 +190,7 @@ struct NarrativeBuilder {
                 let sbox = appSandboxDisplay(from: snapshot)
                 let hr = hardenedRuntimeDisplay(from: snapshot)
 
-                lines.append("Runtime constraints:")
+                lines.append("Runtime constraints")
                 lines.append("\(iconObserved(value: sbox.value, unknownReason: sbox.unknownReason)) App Sandbox")
                 lines.append("\(iconObserved(value: hr.value, unknownReason: hr.unknownReason)) Hardened Runtime")
             }
@@ -198,7 +200,7 @@ struct NarrativeBuilder {
                 let q = quarantineStatusDisplay(from: snapshot)
                 let gk = gatekeeperRelevanceDisplay(from: snapshot)
 
-                lines.append("Provenance:")
+                lines.append("Provenance")
                 lines.append("\(iconObserved(value: q.value, unknownReason: q.unknownReason)) Quarantine metadata")
 
                 if snapshot.trustLevel == .apple {
@@ -218,8 +220,7 @@ struct NarrativeBuilder {
 
             return lines
         }
-        
-        
+
         // MARK: - Title
         let title = snapshot.name ?? "Process Details"
 
@@ -228,10 +229,10 @@ struct NarrativeBuilder {
             label: snapshot.trustLevel.displayName,
             evidence: [
                 FactLine(
-                    label: "Signature check",
+                    label: "Code signature",
                     value: signatureStatusString(from: snapshot.signingSummary),
                     unknownReason: snapshot.signingSummary == nil
-                        ? "Signing information unavailable (missing executable path or inspection failure)."
+                        ? "Signing information unavailable (inspection limits)."
                         : nil
                 ),
 
@@ -248,7 +249,7 @@ struct NarrativeBuilder {
                     label: "Team ID",
                     value: snapshot.signingSummary?.teamID,
                     unknownReason: snapshot.signingSummary == nil
-                        ? "Signing information unavailable."
+                        ? "Signing information unavailable (inspection limits)."
                         : "No Team ID present in signature metadata."
                 ),
 
@@ -256,7 +257,7 @@ struct NarrativeBuilder {
                     label: "Identifier",
                     value: snapshot.signingSummary?.identifier,
                     unknownReason: snapshot.signingSummary == nil
-                        ? "Signing information unavailable."
+                        ? "Signing information unavailable (inspection limits)."
                         : "No signing identifier present."
                 )
             ],
@@ -350,14 +351,14 @@ struct NarrativeBuilder {
                     label: "Trust category",
                     value: snapshot.signingSummary?.trustCategory.displayName,
                     unknownReason: snapshot.signingSummary == nil
-                        ? "Signing information unavailable."
+                        ? "Signing information unavailable (inspection limits)."
                         : nil
                 ),
                 FactLine(
                     label: "Signature status",
                     value: signatureStatusString(from: snapshot.signingSummary),
                     unknownReason: snapshot.signingSummary == nil
-                        ? "Signing inspection unavailable (missing executable path or inspection failure)."
+                        ? "Signing information unavailable (inspection limits)."
                         : nil
                 ),
 
@@ -365,7 +366,7 @@ struct NarrativeBuilder {
                     label: "Team ID",
                     value: snapshot.signingSummary?.teamID,
                     unknownReason: snapshot.signingSummary == nil
-                        ? "Signing information unavailable."
+                        ? "Signing information unavailable (inspection limits)."
                         : "No Team ID present in signature metadata."
                 ),
 
@@ -373,7 +374,7 @@ struct NarrativeBuilder {
                     label: "Identifier",
                     value: snapshot.signingSummary?.identifier,
                     unknownReason: snapshot.signingSummary == nil
-                        ? "Signing information unavailable."
+                        ? "Signing information unavailable (inspection limits)."
                         : "No signing identifier present."
                 ),
 
@@ -387,7 +388,7 @@ struct NarrativeBuilder {
                 }()
             ],
             interpretation: [
-                "Code signing provides a stable identity for the executable and supports integrity checks."
+                "Code signing provides a verifiable identity for the executable and supports integrity checks."
             ],
             limits: [
                 LimitNote(text: "A valid signature does not imply safety or benign behavior."),
@@ -412,18 +413,18 @@ struct NarrativeBuilder {
                 {
                     let gk = gatekeeperRelevanceDisplay(from: snapshot)
                     return FactLine(
-                        label: "Gatekeeper relevance",
+                        label: "Gatekeeper applicability",
                         value: gk.value,
                         unknownReason: gk.unknownReason
                     )
                 }()
             ],
             interpretation: [
-                "These signals describe provenance and whether macOS Gatekeeper checks are likely to apply."
+                "These signals describe provenance and when Gatekeeper checks are more likely to be relevant."
             ],
             limits: [
                 LimitNote(text: "Quarantine metadata may be absent or removed; absence does not imply local origin or safety."),
-                LimitNote(text: "Gatekeeper relevance is inferred from context and metadata; it is not directly observed."),
+                LimitNote(text: "Gatekeeper applicability is inferred from context and metadata; it is not directly observed."),
                 LimitNote(text: "This does not perform a Gatekeeper assessment and does not determine notarization status.")
             ]
         )
@@ -454,17 +455,17 @@ struct NarrativeBuilder {
                 "These signals describe declared runtime enforcement modes for the selected executable."
             ],
             limits: [
-                LimitNote(text: "Sandbox status is derived from declared entitlements in the code signature."),
-                LimitNote(text: "Hardened Runtime is derived from code signing flags."),
+                LimitNote(text: "Sandbox status is inferred from declared entitlements in the code signature."),
+                LimitNote(text: "Hardened Runtime is inferred from code signing flags."),
                 LimitNote(text: "These settings describe enforcement modes, not observed runtime behavior.")
             ]
         )
 
         // MARK: - Global Limits & Uncertainty
         let globalLimits: [LimitNote] = [
-            LimitNote(text: "Scope: this tool enumerates user-space GUI applications via NSWorkspace."),
+            LimitNote(text: "Scope: This tool enumerates running applications visible to NSWorkspace (via LaunchServices). This includes user applications, background agents, and some helper processes, but does not represent a complete view of all running system processes."),
             LimitNote(text: "This is a point-in-time snapshot; processes may exit or change between refreshes."),
-            LimitNote(text: "Unknown fields are expected and should be interpreted as 'unavailable', not 'suspicious'.")
+            LimitNote(text: "Unknown fields are expected and should be interpreted as unavailable, not suspicious.")
         ]
 
         // MARK: - Return
