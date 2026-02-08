@@ -142,6 +142,54 @@ struct NarrativeBuilder {
                 return ("Possible (app bundle; signing information unavailable)", nil)
             }
         }
+        
+        func buildSummary(from snapshot: ProcessSnapshot) -> [String] {
+            var lines: [String] = []
+
+            // 1) What it is (best-effort identity)
+            if let name = snapshot.name, !name.isEmpty {
+                if let bundleID = snapshot.bundleIdentifier, !bundleID.isEmpty {
+                    lines.append("“\(name)” (\(bundleID)) is currently running.")
+                } else {
+                    lines.append("“\(name)” is currently running.")
+                }
+            } else {
+                lines.append("A selected process is currently running.")
+            }
+
+            // 2) Trust orientation (not verdict)
+            lines.append("Based on static code-signing identity (when available), this is classified as: \(snapshot.trustLevel.displayName).")
+
+            // 3) Signature status (only if we can say something)
+            if let summary = snapshot.signingSummary {
+                if summary.status == 0 {
+                    lines.append("The on-disk executable’s signature check succeeded.")
+                } else {
+                    lines.append("The on-disk executable’s signature check failed (OSStatus \(summary.status)).")
+                }
+            } else {
+                lines.append("Signature details were not available for this process (missing executable path or inspection limits).")
+            }
+
+            // 4) Runtime constraints (sandbox + hardened runtime)
+            func yesNoUnknown(_ value: (String?, String?)) -> String {
+                if let v = value.0 { return v }
+                return "Unknown"
+            }
+            let sbox = yesNoUnknown(appSandboxDisplay(from: snapshot))
+            let hr = yesNoUnknown(hardenedRuntimeDisplay(from: snapshot))
+            lines.append("Declared runtime constraints: App Sandbox \(sbox); Hardened Runtime \(hr).")
+
+            // 5) Provenance (quarantine + gatekeeper relevance)
+            let q = quarantineStatusDisplay(from: snapshot).value ?? "Unknown"
+            let gk = gatekeeperRelevanceDisplay(from: snapshot).value ?? "Unknown"
+            lines.append("Provenance signals: Quarantine metadata \(q); Gatekeeper relevance \(gk).")
+
+            // 6) Global limitation (always)
+            lines.append("This view is best-effort and based on on-disk metadata; it does not prove runtime behavior or safety.")
+
+            return lines
+        }
 
         // MARK: - Title
         let title = snapshot.name ?? "Process Details"
@@ -381,6 +429,7 @@ struct NarrativeBuilder {
             title: title,
             trustClassification: trust,
             sections: [identity, signing, provenance, runtimeConstraints],
+            summary: buildSummary(from: snapshot),
             globalLimits: globalLimits
         )
     }

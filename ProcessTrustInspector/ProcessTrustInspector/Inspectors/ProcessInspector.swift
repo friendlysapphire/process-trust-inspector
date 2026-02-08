@@ -90,6 +90,8 @@ final class ProcessInspector {
         var processUid: pid_t = 0
         var parentApp: NSRunningApplication? = nil
         var parentAppName: String? = nil
+        
+        // zero initialize and sizeof() the struct we're sending into C land
         var bsdinfo = proc_bsdinfo()
         let bsdinfo_size = MemoryLayout<proc_bsdinfo>.size
         var got_ppid: Int32 = 0

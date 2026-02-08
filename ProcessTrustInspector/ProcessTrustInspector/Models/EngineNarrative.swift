@@ -16,25 +16,30 @@ import Foundation
 struct EngineNarrative {
     /// Title to use for navigation / header (usually process name, best-effort).
     var title: String
-
+    
+    /// Narrative Mode: human-readable summary shown before sections.
+    var summary: [String] = []
+    
     /// High-level orientation. Not a verdict.
     var trustClassification: TrustClassificationBlock
-
+    
     /// Sectioned narrative: Identity, Code Signing, etc.
     var sections: [NarrativeSection]
-
+    
     /// Always-visible, global caveats about scope and uncertainty.
     var globalLimits: [LimitNote] = []
-
+    
     init(
         title: String,
         trustClassification: TrustClassificationBlock,
         sections: [NarrativeSection],
+        summary: [String] = [],
         globalLimits: [LimitNote] = []
     ) {
         self.title = title
         self.trustClassification = trustClassification
         self.sections = sections
+        self.summary = summary
         self.globalLimits = globalLimits
     }
 }
@@ -129,7 +134,7 @@ struct FactLine: Identifiable {
     }
 }
 
-/// A calm, non-alarmist caveat.
+/// A non-alarmist caveat.
 /// Used both per-section (“limits”) and globally (“Limits & Uncertainty”).
 struct LimitNote: Identifiable {
     let id = UUID()

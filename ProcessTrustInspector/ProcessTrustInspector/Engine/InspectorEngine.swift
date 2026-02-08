@@ -75,7 +75,6 @@ final class InspectorEngine {
             self.clearSelection()
             return
         }
-        // apparently if you use first() it will call the wrong first() .... wtf.
         self.selectedSnapshot = snapshot
         self.selectedPID = pid
         self.selectedNarrative = narrativeBuilder.build(from: snapshot)
@@ -111,7 +110,7 @@ final class InspectorEngine {
                 self.processes.append(newProcess)
             }
         }
-        // if the current selected PID isn't in the current process list (ie it has exited), clear
+        // if the current selected PID isn't in the newly regenerated process list (ie it has exited), clear
         if let selectedPID = self.selectedPID {
             if !self.processes.contains(where: { $0.pid == selectedPID }) {
                 self.clearSelection()

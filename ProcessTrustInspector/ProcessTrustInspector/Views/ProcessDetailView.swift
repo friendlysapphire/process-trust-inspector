@@ -6,7 +6,22 @@ struct ProcessDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                // Narrative summary (primary product)
+                if !narrative.summary.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Summary")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
 
+                        ForEach(narrative.summary, id: \.self) { line in
+                            Text(line)
+                                .font(.body)
+                        }
+                    }
+                    .padding(12)
+                    .background(.thinMaterial)
+                    .cornerRadius(10)
+                }
                 // Trust Classification (orientation, not verdict)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Trust Classification")
