@@ -12,7 +12,7 @@
 import Foundation
 
 struct NarrativeBuilder {
-    
+
     func build(from snapshot: ProcessSnapshot) -> EngineNarrative {
 
         // MARK: - Helpers (local to keep scope tight)
@@ -29,12 +29,12 @@ struct NarrativeBuilder {
                 return "Failed (OSStatus \(summary.status))"
             }
         }
-        
+
         func appStoreOIDEvidenceDisplay(from summary: SigningSummary?) -> (value: String?, unknownReason: String?) {
             guard let summary else {
                 return (nil, "Signing information unavailable.")
             }
-            
+
             let evidence = summary.appStorePolicyOIDEvidence
 
             switch evidence {
@@ -46,7 +46,7 @@ struct NarrativeBuilder {
                 return (nil, reason)
             }
         }
-        
+
         func appSandboxDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
             switch snapshot.isSandboxed {
             case .sandboxed:
@@ -57,7 +57,7 @@ struct NarrativeBuilder {
                 return (nil, reason)
             }
         }
-        
+
         func hardenedRuntimeDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
             switch snapshot.hasHardenedRuntime {
             case .hasHardenedRuntime:
@@ -83,7 +83,7 @@ struct NarrativeBuilder {
                 return (nil, reason)
             }
         }
-        
+
         func bundledStatusDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
             switch snapshot.bundledStatus {
             case .bundled:
@@ -94,7 +94,7 @@ struct NarrativeBuilder {
                 return (nil, reason)
             }
         }
-        
+
         func quarantineStatusDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
             switch snapshot.quarantineStatus {
             case .present:
@@ -105,9 +105,8 @@ struct NarrativeBuilder {
                 return (nil, reason)
             }
         }
-        
-        func gatekeeperRelevanceDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?)
-        {
+
+        func gatekeeperRelevanceDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
 
             // If quarantine is present, Gatekeeper relevance is straightforward.
             switch snapshot.quarantineStatus {
@@ -116,81 +115,112 @@ struct NarrativeBuilder {
             case .unknown(let reason):
                 return (nil, reason)
             case .absent:
-                break
+                break // keep reasoning below
             }
 
-            // If we can't tell what form this is, we can't say much.
+            // If the file isn't quarantined, Gatekeeper may not have evaluated it.
             switch snapshot.bundledStatus {
             case .unknown(let reason):
                 return (nil, reason)
             case .bare:
                 return ("Unlikely (not an app bundle)", nil)
             case .bundled:
-                break
-            }
-
-            // Bundled app with no quarantine metadata: Gatekeeper may or may not have evaluated it.
-            // Use trust category to keep the story honest and non-alarmist.
-            switch snapshot.signingSummary?.trustCategory {
-            case .some(.appStore), .some(.apple):
-                return ("Unlikely (platform/App Store distribution)", nil)
-            case .some(.developer):
-                return ("Possible (Developer ID app; no quarantine metadata observed)", nil)
-            case .some(.unsigned):
-                return ("Possible (unsigned app bundle; no quarantine metadata observed)", nil)
-            case .none:
-                return ("Possible (app bundle; signing information unavailable)", nil)
+                return ("Possible (app bundle; no quarantine metadata observed)", nil)
             }
         }
-        
+
+        // MARK: - Narrative Summary (primary product)
         func buildSummary(from snapshot: ProcessSnapshot) -> [String] {
             var lines: [String] = []
 
             // 1) What it is (best-effort identity)
             if let name = snapshot.name, !name.isEmpty {
                 if let bundleID = snapshot.bundleIdentifier, !bundleID.isEmpty {
-                    lines.append("“\(name)” (\(bundleID)) is currently running.")
+                    lines.append("“\(name)” (\(bundleID))")
                 } else {
-                    lines.append("“\(name)” is currently running.")
+                    lines.append("“\(name)”")
                 }
             } else {
-                lines.append("A selected process is currently running.")
+                lines.append("Selected process")
             }
 
             // 2) Trust orientation (not verdict)
-            lines.append("Based on static code-signing identity (when available), this is classified as: \(snapshot.trustLevel.displayName).")
+            lines.append("Signing identity: \(snapshot.trustLevel.displayName)")
 
-            // 3) Signature status (only if we can say something)
+            // 3) Signature status (calm, symmetric wording)
+            // 3) Signature status (calm, icon-first)
             if let summary = snapshot.signingSummary {
                 if summary.status == 0 {
-                    lines.append("The on-disk executable’s signature check succeeded.")
+                    lines.append("✅ Code signature check passed")
                 } else {
-                    lines.append("The on-disk executable’s signature check failed (OSStatus \(summary.status)).")
+                    lines.append("❌ Code signature check failed (OSStatus \(summary.status))")
                 }
             } else {
-                lines.append("Signature details were not available for this process (missing executable path or inspection limits).")
+                lines.append("⚠️ Code signature unavailable (missing executable path or inspection limits)")
             }
 
-            // 4) Runtime constraints (sandbox + hardened runtime)
-            func yesNoUnknown(_ value: (String?, String?)) -> String {
-                if let v = value.0 { return v }
-                return "Unknown"
+            // MARK: - Summary icon helpers (Option A+ semantics)
+            // ✅ = observed present/yes
+            // ❌ = observed absent/no
+            // ❓ = inferred / conditional applicability (not directly observed)
+            // ⚠️ = unknown / unavailable (inspection limits, missing metadata, race, etc.)
+
+            func iconObserved(value: String?, unknownReason: String?) -> String {
+                if let r = unknownReason, !r.isEmpty { return "⚠️" }
+                guard let v = value?.trimmingCharacters(in: .whitespacesAndNewlines), !v.isEmpty else { return "⚠️" }
+
+                if v.caseInsensitiveCompare("Yes") == .orderedSame { return "✅" }
+                if v.caseInsensitiveCompare("No") == .orderedSame { return "❌" }
+
+                let lower = v.lowercased()
+                if lower.contains("not present") { return "❌" }
+                if lower == "present" || (lower.contains("present") && !lower.contains("not")) { return "✅" }
+
+                return "⚠️"
             }
-            let sbox = yesNoUnknown(appSandboxDisplay(from: snapshot))
-            let hr = yesNoUnknown(hardenedRuntimeDisplay(from: snapshot))
-            lines.append("Declared runtime constraints: App Sandbox \(sbox); Hardened Runtime \(hr).")
 
-            // 5) Provenance (quarantine + gatekeeper relevance)
-            let q = quarantineStatusDisplay(from: snapshot).value ?? "Unknown"
-            let gk = gatekeeperRelevanceDisplay(from: snapshot).value ?? "Unknown"
-            lines.append("Provenance signals: Quarantine metadata \(q); Gatekeeper relevance \(gk).")
+            func iconInferred(unknownReason: String?) -> String {
+                if let r = unknownReason, !r.isEmpty { return "⚠️" }
+                return "❓"
+            }
 
-            // 6) Global limitation (always)
-            lines.append("This view is best-effort and based on on-disk metadata; it does not prove runtime behavior or safety.")
+            // 4) Runtime constraints (scannable)
+            do {
+                let sbox = appSandboxDisplay(from: snapshot)
+                let hr = hardenedRuntimeDisplay(from: snapshot)
+
+                lines.append("Runtime constraints")
+                lines.append("\(iconObserved(value: sbox.value, unknownReason: sbox.unknownReason)) App Sandbox")
+                lines.append("\(iconObserved(value: hr.value, unknownReason: hr.unknownReason)) Hardened Runtime")
+            }
+
+            // 5) Provenance (observed + inferred)
+            do {
+                let q = quarantineStatusDisplay(from: snapshot)
+                let gk = gatekeeperRelevanceDisplay(from: snapshot)
+
+                lines.append("Provenance")
+                lines.append("\(iconObserved(value: q.value, unknownReason: q.unknownReason)) Quarantine metadata")
+
+                if snapshot.trustLevel == .apple {
+                    lines.append("❓ Gatekeeper checks (typically not applicable to system components)")
+                } else {
+                    lines.append("\(iconInferred(unknownReason: gk.unknownReason)) Gatekeeper checks")
+                    if let note = gk.value, !note.isEmpty {
+                        lines.append(note)
+                    }
+                }
+
+                lines.append("Gatekeeper checks are inferred from context and metadata, not directly observed")
+            }
+
+            // 6) Close with one calm scope line
+            lines.append("Best-effort snapshot from on-disk metadata; unknown fields usually reflect scope or missing data")
 
             return lines
         }
-
+        
+        
         // MARK: - Title
         let title = snapshot.name ?? "Process Details"
 
@@ -214,6 +244,7 @@ struct NarrativeBuilder {
                         unknownReason: oidDisplay.unknownReason
                     )
                 }(),
+
                 FactLine(
                     label: "Team ID",
                     value: snapshot.signingSummary?.teamID,
@@ -221,6 +252,7 @@ struct NarrativeBuilder {
                         ? "Signing information unavailable."
                         : "No Team ID present in signature metadata."
                 ),
+
                 FactLine(
                     label: "Identifier",
                     value: snapshot.signingSummary?.identifier,
@@ -267,13 +299,16 @@ struct NarrativeBuilder {
                     unknownReason: snapshot.parentPidName == nil
                         ? "Parent process name not visible via NSWorkspace."
                         : nil
-                ),FactLine(
+                ),
+
+                FactLine(
                     label: "Bundle identifier",
                     value: snapshot.bundleIdentifier,
                     unknownReason: snapshot.bundleIdentifier == nil
                         ? "No bundle identifier was available for this process."
                         : nil
                 ),
+
                 {
                     let b = bundledStatusDisplay(from: snapshot)
                     return FactLine(
@@ -282,6 +317,7 @@ struct NarrativeBuilder {
                         unknownReason: b.unknownReason
                     )
                 }(),
+
                 FactLine(
                     label: "Executable path",
                     value: snapshot.executablePath?.path,
@@ -312,12 +348,20 @@ struct NarrativeBuilder {
             title: "Code Signing",
             facts: [
                 FactLine(
+                    label: "Trust category",
+                    value: snapshot.signingSummary?.trustCategory.displayName,
+                    unknownReason: snapshot.signingSummary == nil
+                        ? "Signing information unavailable."
+                        : nil
+                ),
+                FactLine(
                     label: "Signature status",
                     value: signatureStatusString(from: snapshot.signingSummary),
                     unknownReason: snapshot.signingSummary == nil
                         ? "Signing inspection unavailable (missing executable path or inspection failure)."
                         : nil
                 ),
+
                 FactLine(
                     label: "Team ID",
                     value: snapshot.signingSummary?.teamID,
@@ -325,6 +369,7 @@ struct NarrativeBuilder {
                         ? "Signing information unavailable."
                         : "No Team ID present in signature metadata."
                 ),
+
                 FactLine(
                     label: "Identifier",
                     value: snapshot.signingSummary?.identifier,
@@ -332,13 +377,7 @@ struct NarrativeBuilder {
                         ? "Signing information unavailable."
                         : "No signing identifier present."
                 ),
-                FactLine(
-                    label: "Trust category",
-                    value: snapshot.signingSummary?.trustCategory.displayName,
-                    unknownReason: snapshot.signingSummary == nil
-                        ? "Signing information unavailable."
-                        : nil
-                ),
+
                 {
                     let e = entitlementsEvidenceDisplay(from: snapshot.signingSummary)
                     return FactLine(
@@ -357,7 +396,8 @@ struct NarrativeBuilder {
                 LimitNote(text: "Entitlements describe declared capabilities in the code signature; they do not indicate whether permissions were granted.")
             ]
         )
-        
+
+        // MARK: - Provenance Section
         let provenance = NarrativeSection(
             title: "Provenance",
             facts: [
@@ -369,6 +409,7 @@ struct NarrativeBuilder {
                         unknownReason: q.unknownReason
                     )
                 }(),
+
                 {
                     let gk = gatekeeperRelevanceDisplay(from: snapshot)
                     return FactLine(
@@ -383,9 +424,11 @@ struct NarrativeBuilder {
             ],
             limits: [
                 LimitNote(text: "Quarantine metadata may be absent or removed; absence does not imply local origin or safety."),
+                LimitNote(text: "Gatekeeper relevance is inferred from context and metadata; it is not directly observed."),
                 LimitNote(text: "This does not perform a Gatekeeper assessment and does not determine notarization status.")
             ]
         )
+
         // MARK: - Runtime Constraints
         let runtimeConstraints = NarrativeSection(
             title: "Runtime Constraints",
@@ -398,6 +441,7 @@ struct NarrativeBuilder {
                         unknownReason: sbox.unknownReason
                     )
                 }(),
+
                 {
                     let rt = hardenedRuntimeDisplay(from: snapshot)
                     return FactLine(
