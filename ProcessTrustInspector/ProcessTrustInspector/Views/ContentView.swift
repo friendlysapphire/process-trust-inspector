@@ -16,7 +16,7 @@ struct ContentView: View {
         case all = "All"
         case apple = "Apple"
         case thirdParty = "3rd Party"
-        case unsigned = "Unsigned"
+        case unsigned = "No Publisher Identity"
         var id: String { self.rawValue }
     }
     
@@ -29,7 +29,10 @@ struct ContentView: View {
         case .thirdParty:
             return engine.processes.filter { $0.trustLevel == .appStore || $0.trustLevel == .developer }
         case .unsigned:
-            return engine.processes.filter { $0.trustLevel == .unsigned }
+            return engine.processes.filter {
+                $0.trustLevel == .unsigned || $0.trustLevel == .unknown
+            }
+
         }
     }
     

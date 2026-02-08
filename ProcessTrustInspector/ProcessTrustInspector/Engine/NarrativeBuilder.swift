@@ -159,6 +159,13 @@ struct NarrativeBuilder {
             } else {
                 lines.append("Code signature: Unavailable")
             }
+            
+            // Unsigned / ad-hoc explainer (narrative-owned)
+            if snapshot.trustLevel == .unsigned {
+                lines.append(
+                    "Note: “No Publisher Identity” includes ad-hoc or locally built software. A code signature may be valid, but no publisher identity can be established."
+                )
+            }
 
             // MARK: - Summary icon helpers
             // ✅ = observed present/yes
