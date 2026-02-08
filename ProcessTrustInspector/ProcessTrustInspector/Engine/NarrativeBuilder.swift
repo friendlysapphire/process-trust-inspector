@@ -144,22 +144,21 @@ struct NarrativeBuilder {
                 lines.append("Selected process")
             }
 
-            // 2) Trust orientation (not verdict)
+            // 2) Trust orientation
             lines.append("Signing identity: \(snapshot.trustLevel.displayName)")
 
-            // 3) Signature status (calm, symmetric wording)
-            // 3) Signature status (calm, icon-first)
+            // 3) Signature status
             if let summary = snapshot.signingSummary {
                 if summary.status == 0 {
-                    lines.append("✅ Code signature check passed")
+                    lines.append("Code signature check: Passed")
                 } else {
-                    lines.append("❌ Code signature check failed (OSStatus \(summary.status))")
+                    lines.append("Code signature check: Failed (OSStatus \(summary.status))")
                 }
             } else {
-                lines.append("⚠️ Code signature unavailable (missing executable path or inspection limits)")
+                lines.append("Code signature check: Unavailable (missing executable path or inspection limits)")
             }
 
-            // MARK: - Summary icon helpers (Option A+ semantics)
+            // MARK: - Summary icon helpers
             // ✅ = observed present/yes
             // ❌ = observed absent/no
             // ❓ = inferred / conditional applicability (not directly observed)
@@ -189,7 +188,7 @@ struct NarrativeBuilder {
                 let sbox = appSandboxDisplay(from: snapshot)
                 let hr = hardenedRuntimeDisplay(from: snapshot)
 
-                lines.append("Runtime constraints")
+                lines.append("Runtime constraints:")
                 lines.append("\(iconObserved(value: sbox.value, unknownReason: sbox.unknownReason)) App Sandbox")
                 lines.append("\(iconObserved(value: hr.value, unknownReason: hr.unknownReason)) Hardened Runtime")
             }
@@ -199,7 +198,7 @@ struct NarrativeBuilder {
                 let q = quarantineStatusDisplay(from: snapshot)
                 let gk = gatekeeperRelevanceDisplay(from: snapshot)
 
-                lines.append("Provenance")
+                lines.append("Provenance:")
                 lines.append("\(iconObserved(value: q.value, unknownReason: q.unknownReason)) Quarantine metadata")
 
                 if snapshot.trustLevel == .apple {
@@ -211,11 +210,11 @@ struct NarrativeBuilder {
                     }
                 }
 
-                lines.append("Gatekeeper checks are inferred from context and metadata, not directly observed")
+                lines.append("Gatekeeper checks are inferred from context and metadata; this tool does not directly observe whether Gatekeeper ran")
             }
 
             // 6) Close with one calm scope line
-            lines.append("Best-effort snapshot from on-disk metadata; unknown fields usually reflect scope or missing data")
+            lines.append("Best-effort snapshot from on-disk metadata (unknown fields usually mean unavailable, not suspicious)")
 
             return lines
         }

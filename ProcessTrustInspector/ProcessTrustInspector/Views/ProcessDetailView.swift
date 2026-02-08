@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct ProcessDetailView: View {
     let narrative: EngineNarrative
@@ -145,7 +146,7 @@ private struct SectionCard: View {
     }
 }
 
-// MARK: - Runtime Constraints (Option A)
+// MARK: - Runtime Constraints
 
 private enum RuntimeConstraintStatus: Equatable {
     case enabled
@@ -198,6 +199,49 @@ private struct RuntimeConstraintRow: View {
                     .padding(.leading, 28)
             }
         }
+        .contextMenu {
+            Button("Copy Value") {
+                copyToPasteboard(copyValueText())
+            }
+
+            Button("Copy Label + Value") {
+                copyToPasteboard("\(label): \(copyValueText())")
+            }
+
+            if let r = copyReasonText() {
+                Divider()
+                Button("Copy Unknown Reason") {
+                    copyToPasteboard(r)
+                }
+            }
+        }
+    }
+
+    // MARK: - Copy helpers (UI only)
+
+    private func copyValueText() -> String {
+        switch status {
+        case .enabled:
+            return "Yes"
+        case .disabled:
+            return "No"
+        case .unknown(let reason):
+            if let reason = reason?.trimmingCharacters(in: .whitespacesAndNewlines), !reason.isEmpty {
+                return "Unknown (\(reason))"
+            }
+            return "Unknown"
+        }
+    }
+
+    private func copyReasonText() -> String? {
+        guard case .unknown(let reason) = status else { return nil }
+        guard let reason = reason?.trimmingCharacters(in: .whitespacesAndNewlines), !reason.isEmpty else { return nil }
+        return reason
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 
     @ViewBuilder
@@ -322,6 +366,72 @@ private struct ProvenanceRow: View {
                 EmptyView()
             }
         }
+        .contextMenu {
+            Button("Copy Value") {
+                copyToPasteboard(copyValueText())
+            }
+
+            Button("Copy Label + Value") {
+                copyToPasteboard("\(label): \(copyValueText())")
+            }
+
+            if let extra = copyReasonOrNoteText() {
+                Divider()
+                Button(labelForReasonOrNote()) {
+                    copyToPasteboard(extra)
+                }
+            }
+        }
+    }
+
+    // MARK: - Copy helpers (UI only)
+
+    private func copyValueText() -> String {
+        switch status {
+        case .present:
+            return "Present"
+        case .absent:
+            return "Not present"
+        case .inferred(let note):
+            if let note = note?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty {
+                return note
+            }
+            return "Inferred"
+        case .unknown(let reason):
+            if let reason = reason?.trimmingCharacters(in: .whitespacesAndNewlines), !reason.isEmpty {
+                return "Unknown (\(reason))"
+            }
+            return "Unknown"
+        }
+    }
+
+    private func copyReasonOrNoteText() -> String? {
+        switch status {
+        case .inferred(let note):
+            guard let note = note?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty else { return nil }
+            return note
+        case .unknown(let reason):
+            guard let reason = reason?.trimmingCharacters(in: .whitespacesAndNewlines), !reason.isEmpty else { return nil }
+            return reason
+        default:
+            return nil
+        }
+    }
+
+    private func labelForReasonOrNote() -> String {
+        switch status {
+        case .inferred:
+            return "Copy Note"
+        case .unknown:
+            return "Copy Unknown Reason"
+        default:
+            return "Copy"
+        }
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 
     @ViewBuilder
@@ -344,7 +454,6 @@ private struct ProvenanceRow: View {
 }
 
 // MARK: - Fact rows (everything else)
-
 private struct FactRow: View {
     let fact: FactLine
 
@@ -376,5 +485,38 @@ private struct FactRow: View {
             }
         }
         .textSelection(.enabled)
+        .contextMenu {
+            Button("Copy Value") {
+                copyToPasteboard(copyValueText())
+            }
+
+            Button("Copy Label + Value") {
+                copyToPasteboard("\(fact.label): \(copyValueText())")
+            }
+
+            if let reason = fact.unknownReason, !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Divider()
+                Button("Copy Unknown Reason") {
+                    copyToPasteboard(reason)
+                }
+            }
+        }
+    }
+
+    // MARK: - Copy helpers (UI only)
+
+    private func copyValueText() -> String {
+        if let v = fact.value?.trimmingCharacters(in: .whitespacesAndNewlines), !v.isEmpty {
+            return v
+        }
+        if let r = fact.unknownReason?.trimmingCharacters(in: .whitespacesAndNewlines), !r.isEmpty {
+            return "Unknown (\(r))"
+        }
+        return "Unknown"
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 }
