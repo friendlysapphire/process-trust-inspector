@@ -46,6 +46,7 @@ final class InspectorEngine {
     /// Diagnostic counters for UI/debug visibility.
     var runningAppCount: Int = 0
     var refreshCount: Int = 0
+    var lastRefreshTime: Date? = nil
     
     // data structure for providing output to UI.
     // this represents the primary output product of the tool
@@ -99,6 +100,7 @@ final class InspectorEngine {
     func refresh() {
         self.refreshCount += 1
         self.processes = []
+        self.lastRefreshTime = Date()
         
         let appList = NSWorkspace.shared.runningApplications
         

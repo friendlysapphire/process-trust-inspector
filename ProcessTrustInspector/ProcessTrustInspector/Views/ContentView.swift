@@ -36,15 +36,16 @@ struct ContentView: View {
             }
 
         case .unsigned:
-            return engine.processes.filter {
-                $0.trustLevel == .unsigned
-            }
+            return engine.processes.filter { $0.trustLevel == .unsigned }
 
         case .unknown:
-            return engine.processes.filter {
-                $0.trustLevel == .unknown
-            }
+            return engine.processes.filter { $0.trustLevel == .unknown }
         }
+    }
+
+    private var lastRefreshDisplay: String {
+        guard let t = engine.lastRefreshTime else { return "Never" }
+        return t.formatted(date: .abbreviated, time: .shortened)
     }
 
     var body: some View {
@@ -63,6 +64,18 @@ struct ContentView: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .controlSize(.small)
+
+                    // Last refresh time (UI-only, engine-owned)
+                    HStack(spacing: 6) {
+                        Text("Last refresh:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        Text(lastRefreshDisplay)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 2)
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 10)
