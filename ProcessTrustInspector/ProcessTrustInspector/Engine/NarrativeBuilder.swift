@@ -1,3 +1,4 @@
+
 //
 //  NarrativeBuilder.swift
 //  ProcessTrustInspector
@@ -156,12 +157,15 @@ struct NarrativeBuilder {
                 lines.append("Code signature: Unavailable")
             }
 
-            // Unsigned / ad-hoc explainer (narrative-owned)
+            // Unsigned / ad-hoc explainer (short, calm, no "Note:" prefix)
             if snapshot.trustLevel == .unsigned {
-                lines.append(
-                    "“No Publisher Identity” includes ad-hoc or locally built software. A code signature may be valid, but no publisher identity can be established."
-                )
+                lines.append("“No Publisher Identity” includes ad-hoc or locally built software. A code signature may be valid, but no publisher identity can be established.")
             }
+
+            // ✅ = observed present/yes
+            // ❌ = observed absent/no
+            // ❓ = inferred / conditional applicability (not directly observed)
+            // ⚠️ = unknown / unavailable (inspection limits, missing metadata, race, etc.)
 
             func iconObserved(value: String?, unknownReason: String?) -> String {
                 if let r = unknownReason, !r.isEmpty { return "⚠️" }
@@ -182,6 +186,7 @@ struct NarrativeBuilder {
                 return "❓"
             }
 
+            // Runtime constraints (scannable)
             do {
                 let sbox = appSandboxDisplay(from: snapshot)
                 let hr = hardenedRuntimeDisplay(from: snapshot)
@@ -191,6 +196,7 @@ struct NarrativeBuilder {
                 lines.append("\(iconObserved(value: hr.value, unknownReason: hr.unknownReason)) Hardened Runtime")
             }
 
+            // Provenance (observed + inferred)
             do {
                 let q = quarantineStatusDisplay(from: snapshot)
                 let gk = gatekeeperRelevanceDisplay(from: snapshot)
@@ -201,19 +207,23 @@ struct NarrativeBuilder {
                 if snapshot.trustLevel == .apple {
                     lines.append("❓ Gatekeeper checks (typically not applicable to system components)")
                 } else {
-                    lines.append("\(iconInferred(unknownReason: gk.unknownReason)) Gatekeeper checks")
-                    if let note = gk.value, !note.isEmpty {
-                        lines.append(note)
+                    // Fix “Possible…” flow: keep the evaluation note on the same line.
+                    let eval = gk.value?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if let eval, !eval.isEmpty {
+                        lines.append("\(iconInferred(unknownReason: gk.unknownReason)) Gatekeeper checks — \(eval)")
+                    } else {
+                        lines.append("\(iconInferred(unknownReason: gk.unknownReason)) Gatekeeper checks")
                     }
                 }
             }
+
             return lines
         }
 
         // MARK: - Title
         let title = snapshot.name ?? "Process Details"
 
-        // MARK: - Trust Classification
+        // MARK: - Trust Classification (orientation)
         let trust = TrustClassificationBlock(
             label: snapshot.trustLevel.displayName,
             evidence: [
@@ -223,6 +233,31 @@ struct NarrativeBuilder {
                     unknownReason: snapshot.signingSummary == nil
                         ? "Signing information unavailable (inspection limits)."
                         : nil
+                ),
+
+                {
+                    let oidDisplay = appStoreOIDEvidenceDisplay(from: snapshot.signingSummary)
+                    return FactLine(
+                        label: "App Store certificate policy OID",
+                        value: oidDisplay.value,
+                        unknownReason: oidDisplay.unknownReason
+                    )
+                }(),
+
+                FactLine(
+                    label: "Team ID",
+                    value: snapshot.signingSummary?.teamID,
+                    unknownReason: snapshot.signingSummary == nil
+                        ? "Signing information unavailable (inspection limits)."
+                        : "No Team ID present in signature metadata."
+                ),
+
+                FactLine(
+                    label: "Identifier",
+                    value: snapshot.signingSummary?.identifier,
+                    unknownReason: snapshot.signingSummary == nil
+                        ? "Signing information unavailable (inspection limits)."
+                        : "No signing identifier present."
                 )
             ],
             interpretation: [
@@ -231,6 +266,133 @@ struct NarrativeBuilder {
             limits: [
                 LimitNote(text: "This is not a safety verdict and does not describe runtime behavior."),
                 LimitNote(text: "If signature details are unavailable, classification may be incomplete.")
+            ]
+        )
+
+        // MARK: - Identity Section
+        let identity = NarrativeSection(
+            title: "Identity",
+            facts: [
+                FactLine(
+                    label: "Process name",
+                    value: snapshot.name,
+                    unknownReason: snapshot.name == nil
+                        ? "Process name unavailable."
+                        : nil
+                ),
+                FactLine(label: "PID", value: "\(snapshot.pid)"),
+                FactLine(label: "User ID", value: "\(snapshot.uid)"),
+                FactLine(label: "Running as root", value: snapshot.runningAsRoot ? "Yes" : "No"),
+
+                FactLine(
+                    label: "Parent PID",
+                    value: snapshot.parentPid.map { String($0) },
+                    unknownReason: snapshot.parentPid == nil
+                        ? "Parent PID unavailable (race condition or not visible in current scope)."
+                        : nil
+                ),
+
+                FactLine(
+                    label: "Parent process",
+                    value: snapshot.parentPidName,
+                    unknownReason: snapshot.parentPidName == nil
+                        ? "Parent process name not visible via NSWorkspace."
+                        : nil
+                ),
+
+                FactLine(
+                    label: "Bundle identifier",
+                    value: snapshot.bundleIdentifier,
+                    unknownReason: snapshot.bundleIdentifier == nil
+                        ? "No bundle identifier was available for this process."
+                        : nil
+                ),
+
+                {
+                    let b = bundledStatusDisplay(from: snapshot)
+                    return FactLine(
+                        label: "Bundled application",
+                        value: b.value,
+                        unknownReason: b.unknownReason
+                    )
+                }(),
+
+                FactLine(
+                    label: "Executable path",
+                    value: snapshot.executablePath?.path,
+                    unknownReason: snapshot.executablePath == nil
+                        ? "Executable path unavailable from NSWorkspace."
+                        : nil
+                ),
+
+                FactLine(
+                    label: "Start time",
+                    value: formatStartTime(snapshot.startTime),
+                    unknownReason: snapshot.startTime == nil
+                        ? "Launch time unavailable."
+                        : nil
+                )
+            ],
+            interpretation: [
+                "This section describes an identity snapshot of the selected running instance."
+            ],
+            limits: [
+                LimitNote(text: "PIDs are ephemeral; refresh may invalidate this snapshot."),
+                LimitNote(text: "Missing fields are normal and may reflect metadata absence, scope limits, or race conditions.")
+            ]
+        )
+
+        // MARK: - Code Signing Section
+        let signing = NarrativeSection(
+            title: "Code Signing",
+            facts: [
+                FactLine(
+                    label: "Trust category",
+                    value: snapshot.signingSummary?.trustCategory.displayName,
+                    unknownReason: snapshot.signingSummary == nil
+                        ? "Signing information unavailable (inspection limits)."
+                        : nil
+                ),
+                FactLine(
+                    label: "Signature status",
+                    value: signatureStatusString(from: snapshot.signingSummary),
+                    unknownReason: snapshot.signingSummary == nil
+                        ? "Signing information unavailable (inspection limits)."
+                        : nil
+                ),
+
+                FactLine(
+                    label: "Team ID",
+                    value: snapshot.signingSummary?.teamID,
+                    unknownReason: snapshot.signingSummary == nil
+                        ? "Signing information unavailable (inspection limits)."
+                        : "No Team ID present in signature metadata."
+                ),
+
+                FactLine(
+                    label: "Identifier",
+                    value: snapshot.signingSummary?.identifier,
+                    unknownReason: snapshot.signingSummary == nil
+                        ? "Signing information unavailable (inspection limits)."
+                        : "No signing identifier present."
+                ),
+
+                {
+                    let e = entitlementsEvidenceDisplay(from: snapshot.signingSummary)
+                    return FactLine(
+                        label: "Entitlements",
+                        value: e.value,
+                        unknownReason: e.unknownReason
+                    )
+                }()
+            ],
+            interpretation: [
+                "Code signing provides a verifiable identity for the executable and supports integrity checks."
+            ],
+            limits: [
+                LimitNote(text: "A valid signature does not imply safety or benign behavior."),
+                LimitNote(text: "This describes the on-disk executable, not runtime memory state."),
+                LimitNote(text: "Entitlements describe declared capabilities in the code signature; they do not indicate whether permissions were granted.")
             ]
         )
 
@@ -246,6 +408,7 @@ struct NarrativeBuilder {
                         unknownReason: q.unknownReason
                     )
                 }(),
+
                 {
                     let gk = gatekeeperRelevanceDisplay(from: snapshot)
                     return FactLine(
@@ -265,13 +428,52 @@ struct NarrativeBuilder {
             ]
         )
 
+        // MARK: - Runtime Constraints
+        let runtimeConstraints = NarrativeSection(
+            title: "Runtime Constraints",
+            facts: [
+                {
+                    let sbox = appSandboxDisplay(from: snapshot)
+                    return FactLine(
+                        label: "App Sandbox",
+                        value: sbox.value,
+                        unknownReason: sbox.unknownReason
+                    )
+                }(),
+
+                {
+                    let rt = hardenedRuntimeDisplay(from: snapshot)
+                    return FactLine(
+                        label: "Hardened Runtime",
+                        value: rt.value,
+                        unknownReason: rt.unknownReason
+                    )
+                }()
+            ],
+            interpretation: [
+                "These signals describe declared runtime enforcement modes for the selected executable."
+            ],
+            limits: [
+                LimitNote(text: "Sandbox status is inferred from declared entitlements in the code signature."),
+                LimitNote(text: "Hardened Runtime is inferred from code signing flags."),
+                LimitNote(text: "These settings describe enforcement modes, not observed runtime behavior.")
+            ]
+        )
+
+        // MARK: - Global Limits & Uncertainty
+        let globalLimits: [LimitNote] = [
+            LimitNote(text: "Scope: This tool enumerates running applications visible to NSWorkspace (via LaunchServices). This includes user applications, background agents, and some helper processes, but does not represent a complete view of all running system processes."),
+            LimitNote(text: "This is a point-in-time snapshot; processes may exit or change between refreshes."),
+            LimitNote(text: "Unknown fields are expected and should be interpreted as unavailable, not suspicious.")
+        ]
+
         // MARK: - Return
         return EngineNarrative(
             title: title,
             trustClassification: trust,
-            sections: [provenance],
+            sections: [identity, signing, provenance, runtimeConstraints],
             summary: buildSummary(from: snapshot),
-            globalLimits: []
+            globalLimits: globalLimits
         )
     }
 }

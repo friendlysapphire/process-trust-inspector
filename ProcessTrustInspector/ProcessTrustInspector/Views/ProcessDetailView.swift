@@ -310,11 +310,21 @@ private struct ProvenanceBlock: View {
     }
 
     private var gatekeeperFact: FactLine? {
-        facts.first(where: { $0.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "gatekeeper relevance" })
+        facts.first(where: {
+            let k = $0.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            return k.contains("gatekeeper")
+        })
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            
+#if DEBUG
+Text("DEBUG facts: " + facts.map { $0.label }.joined(separator: " | "))
+    .font(.caption2)
+    .foregroundColor(.secondary)
+    .padding(.bottom, 4)
+#endif
 
             // Quarantine: observed metadata present/absent/unknown
             if let q = quarantineFact {
