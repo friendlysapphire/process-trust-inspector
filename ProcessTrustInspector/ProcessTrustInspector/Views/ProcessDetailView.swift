@@ -6,86 +6,91 @@ struct ProcessDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 20) {
 
-                // Narrative summary (primary product)
-                if !narrative.summary.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Summary")
+                    // Narrative summary (primary product)
+                    if !narrative.summary.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Summary")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            // Single Text node so drag-selection works naturally.
+                            Text(styledSummaryText(from: narrative.summary))
+                                .font(.body)
+                        }
+                        .padding(12)
+                        .background(.thinMaterial)
+                        .cornerRadius(10)
+                    }
+
+                    // Trust Classification (orientation, not verdict)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Trust Classification")
                             .font(.caption)
                             .foregroundColor(.secondary)
 
-                        // Single Text node so drag-selection works naturally.
-                        Text(styledSummaryText(from: narrative.summary))
-                            .font(.body)
+                        Text(narrative.trustClassification.label)
+                            .font(.headline)
+
+                        if !narrative.trustClassification.interpretation.isEmpty {
+                            Text(narrative.trustClassification.interpretation.joined(separator: "\n"))
+                                .font(.body)
+                                .padding(.top, 2)
+                        }
+
+                        if !narrative.trustClassification.evidence.isEmpty {
+                            DisclosureGroup("Evidence") {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    ForEach(narrative.trustClassification.evidence) { fact in
+                                        FactRow(fact: fact)
+                                    }
+                                }
+                                .padding(.top, 8)
+                            }
+                            .font(.subheadline)
+                        }
+
+                        if !narrative.trustClassification.limits.isEmpty {
+                            Text(narrative.trustClassification.limits.map { "• \($0.text)" }.joined(separator: "\n"))
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 2)
+                        }
                     }
                     .padding(12)
                     .background(.thinMaterial)
                     .cornerRadius(10)
-                }
 
-                // Trust Classification (orientation, not verdict)
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Trust Classification")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-
-                    Text(narrative.trustClassification.label)
-                        .font(.headline)
-
-                    if !narrative.trustClassification.interpretation.isEmpty {
-                        Text(narrative.trustClassification.interpretation.joined(separator: "\n"))
-                            .font(.body)
-                            .padding(.top, 2)
+                    // Narrative sections
+                    ForEach(narrative.sections) { section in
+                        SectionCard(section: section)
                     }
 
-                    if !narrative.trustClassification.evidence.isEmpty {
-                        DisclosureGroup("Evidence") {
-                            VStack(alignment: .leading, spacing: 8) {
-                                ForEach(narrative.trustClassification.evidence) { fact in
-                                    FactRow(fact: fact)
-                                }
-                            }
-                            .padding(.top, 8)
+                    // Global limits (always visible)
+                    if !narrative.globalLimits.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Limits & Uncertainty")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Text(narrative.globalLimits.map { "• \($0.text)" }.joined(separator: "\n"))
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
                         }
-                        .font(.subheadline)
+                        .padding(.top, 4)
                     }
 
-                    if !narrative.trustClassification.limits.isEmpty {
-                        Text(narrative.trustClassification.limits.map { "• \($0.text)" }.joined(separator: "\n"))
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 2)
-                    }
+                    Spacer(minLength: 0)
                 }
-                .padding(12)
-                .background(.thinMaterial)
-                .cornerRadius(10)
+                .padding(16)
+                .frame(maxWidth: 720, alignment: .leading)
+                .textSelection(.enabled)
 
-                // Narrative sections
-                ForEach(narrative.sections) { section in
-                    SectionCard(section: section)
-                }
-
-                // Global limits (always visible)
-                if !narrative.globalLimits.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Limits & Uncertainty")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        Text(narrative.globalLimits.map { "• \($0.text)" }.joined(separator: "\n"))
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.top, 4)
-                }
-
-                Spacer(minLength: 0)
+                Spacer() // <-- key: makes ScrollView fill the pane, not just the 720pt column
             }
-            .padding(16)
-            .frame(maxWidth: 720, alignment: .leading)
-            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading) // optional but helps the layout
         }
         .navigationTitle(narrative.title)
     }
