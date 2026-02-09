@@ -11,6 +11,7 @@ import AppKit
 struct ContentView: View {
     @State private var engine = InspectorEngine()
     @State private var selectedCategory: TrustFilter = .all
+    @State private var searchText: String = ""
 
     enum TrustFilter: String, CaseIterable, Identifiable {
         case all = "All"
@@ -22,30 +23,48 @@ struct ContentView: View {
         var id: String { self.rawValue }
     }
 
-    private var filteredProcesses: [ProcessSnapshot] {
-        switch selectedCategory {
-        case .all:
-            return engine.processes
-
-        case .apple:
-            return engine.processes.filter { $0.trustLevel == .apple }
-
-        case .thirdParty:
-            return engine.processes.filter {
-                $0.trustLevel == .appStore || $0.trustLevel == .developer
-            }
-
-        case .unsigned:
-            return engine.processes.filter { $0.trustLevel == .unsigned }
-
-        case .unknown:
-            return engine.processes.filter { $0.trustLevel == .unknown }
-        }
-    }
-
     private var lastRefreshDisplay: String {
         guard let t = engine.lastRefreshTime else { return "Never" }
         return t.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    // MARK: - Unified list pipeline (filter → search → sort)
+    private var visibleProcesses: [ProcessSnapshot] {
+        let base: [ProcessSnapshot]
+        switch selectedCategory {
+        case .all:
+            base = engine.processes
+        case .apple:
+            base = engine.processes.filter { $0.trustLevel == .apple }
+        case .thirdParty:
+            base = engine.processes.filter { $0.trustLevel == .appStore || $0.trustLevel == .developer }
+        case .unsigned:
+            base = engine.processes.filter { $0.trustLevel == .unsigned }
+        case .unknown:
+            base = engine.processes.filter { $0.trustLevel == .unknown }
+        }
+
+        let trimmedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let searched: [ProcessSnapshot]
+        if trimmedQuery.isEmpty {
+            searched = base
+        } else {
+            let q = trimmedQuery.lowercased()
+            searched = base.filter { p in
+                // Keep it simple + forgiving: name OR bundle id match.
+                let name = (p.name ?? "").lowercased()
+                let bundle = (p.bundleIdentifier ?? "").lowercased()
+                return name.contains(q) || bundle.contains(q)
+            }
+        }
+
+        // Alpha sort: name (case-insensitive) then PID to stabilize ordering.
+        return searched.sorted {
+            let aName = ($0.name ?? "Unknown").lowercased()
+            let bName = ($1.name ?? "Unknown").lowercased()
+            if aName == bName { return $0.pid < $1.pid }
+            return aName < bName
+        }
     }
 
     var body: some View {
@@ -65,7 +84,6 @@ struct ContentView: View {
                     .labelsHidden()
                     .controlSize(.small)
 
-                    // Last refresh time (UI-only, engine-owned)
                     HStack(spacing: 6) {
                         Text("Last refresh:")
                             .font(.caption)
@@ -83,7 +101,7 @@ struct ContentView: View {
 
                 Divider()
 
-                List(filteredProcesses, id: \.pid, selection: $engine.selectedPID) { process in
+                List(visibleProcesses, id: \.pid, selection: $engine.selectedPID) { process in
                     HStack {
                         Image(systemName: iconName(for: process.trustLevel))
                             .foregroundColor(color(for: process.trustLevel))
@@ -100,6 +118,7 @@ struct ContentView: View {
                     .tag(process.pid)
                 }
                 .listStyle(.sidebar)
+                .searchable(text: $searchText, placement: .sidebar, prompt: "Search processes")
             }
             .navigationTitle("Process Inspector")
             .toolbar {
@@ -107,8 +126,9 @@ struct ContentView: View {
                     Button {
                         engine.refresh()
 
+                        // Refresh might invalidate selection.
                         if let pid = engine.selectedPID,
-                           !filteredProcesses.contains(where: { $0.pid == pid }) {
+                           !visibleProcesses.contains(where: { $0.pid == pid }) {
                             engine.clearSelection()
                         }
                     } label: {
@@ -131,7 +151,7 @@ struct ContentView: View {
             engine.refresh()
 
             if let pid = engine.selectedPID,
-               !filteredProcesses.contains(where: { $0.pid == pid }) {
+               !visibleProcesses.contains(where: { $0.pid == pid }) {
                 engine.clearSelection()
             }
         }
@@ -144,7 +164,13 @@ struct ContentView: View {
         }
         .onChange(of: selectedCategory) { _, _ in
             if let pid = engine.selectedPID,
-               !filteredProcesses.contains(where: { $0.pid == pid }) {
+               !visibleProcesses.contains(where: { $0.pid == pid }) {
+                engine.clearSelection()
+            }
+        }
+        .onChange(of: searchText) { _, _ in
+            if let pid = engine.selectedPID,
+               !visibleProcesses.contains(where: { $0.pid == pid }) {
                 engine.clearSelection()
             }
         }
