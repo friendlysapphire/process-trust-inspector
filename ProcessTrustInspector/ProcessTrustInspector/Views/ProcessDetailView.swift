@@ -173,6 +173,13 @@ private struct SectionCard: View {
             Text(section.title)
                 .font(.headline)
 
+            // Move the "what this is" sentence to the top as a subtle subtitle.
+            if !section.interpretation.isEmpty {
+                Text(section.interpretation.joined(separator: "\n"))
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+            }
+
             if isRuntimeConstraintsSection {
                 RuntimeConstraintsBlock(facts: section.facts)
             } else if isProvenanceSection {
@@ -183,12 +190,6 @@ private struct SectionCard: View {
                         FactRow(fact: fact)
                     }
                 }
-            }
-
-            if !section.interpretation.isEmpty {
-                Text(section.interpretation.joined(separator: "\n"))
-                    .font(.body)
-                    .padding(.top, 2)
             }
 
             if !section.limits.isEmpty {
@@ -397,12 +398,6 @@ private struct ProvenanceBlock: View {
                     status: gatekeeperStatus(from: gk)
                 )
             }
-
-            // A+ explicit epistemology note (small, calm, always the same)
-            Text("Gatekeeper checks are inferred from context and metadata. They are not directly observed here, and missing quarantine metadata does not confirm whether Gatekeeper ran.")
-                .font(.callout)
-                .foregroundColor(.secondary)
-                .padding(.top, 2)
         }
     }
 

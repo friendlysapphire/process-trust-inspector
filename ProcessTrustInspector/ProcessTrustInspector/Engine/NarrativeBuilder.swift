@@ -332,7 +332,7 @@ struct NarrativeBuilder {
                 )
             ],
             interpretation: [
-                "This section describes an identity snapshot of the selected running instance."
+                "This section describes an identity snapshot of the selected running process."
             ],
             limits: [
                 LimitNote(text: "PIDs are ephemeral; refresh may invalidate this snapshot."),
@@ -417,12 +417,12 @@ struct NarrativeBuilder {
                 }()
             ],
             interpretation: [
-                "These signals describe provenance and when Gatekeeper checks are more likely to be relevant."
+                "These signals describe provenance and when Gatekeeper is more likely to evaluate an application at launch."
             ],
             limits: [
-                LimitNote(text: "Quarantine metadata may be absent or removed; absence does not imply local origin or safety."),
-                LimitNote(text: "Gatekeeper checks are inferred from context and metadata; this tool does not directly observe whether Gatekeeper ran."),
-                LimitNote(text: "This does not perform a Gatekeeper assessment and does not determine notarization status.")
+                LimitNote(text: "Quarantine metadata may be absent or removed; its absence does not imply that the software is safe."),
+                LimitNote(text: "Gatekeeper behavior is inferred from context and metadata; this tool does not directly observe whether Gatekeeper evaluated the application."),
+                LimitNote(text: "This tool does not perform a Gatekeeper assessment and does not determine notarization status.")
             ]
         )
 
@@ -454,7 +454,7 @@ struct NarrativeBuilder {
             limits: [
                 LimitNote(text: "Sandbox status is inferred from declared entitlements in the code signature."),
                 LimitNote(text: "Hardened Runtime is inferred from code signing flags."),
-                LimitNote(text: "These settings describe enforcement modes, not observed runtime behavior.")
+                LimitNote(text: "These settings describe enforcement modes applied by the operating system at runtime; they do not describe observed runtime behavior.")
             ]
         )
 
