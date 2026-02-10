@@ -116,6 +116,7 @@ final class ProcessInspector {
         
         }
         
+        
         return ProcessSnapshot(pid: pid,
                                uid: processUid,
                                parentPid: parentPid,
@@ -126,7 +127,8 @@ final class ProcessInspector {
                                executablePath: path,
                                signingSummary: signingInfo,
                                bundledStatus: bundledStatus,
-                               quarantineStatus: quarantineStatus)
+                               quarantineStatus: quarantineStatus,
+                               icon: targetApp.icon)
         
     }
     

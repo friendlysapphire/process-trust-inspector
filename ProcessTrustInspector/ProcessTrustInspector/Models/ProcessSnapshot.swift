@@ -7,6 +7,7 @@
 
 import Foundation
 import Security
+import AppKit
 
 enum AppSandboxStatus {
     case sandboxed
@@ -44,6 +45,8 @@ struct ProcessSnapshot {
     let signingSummary: SigningSummary?
     let bundledStatus: BundledStatus
     let quarantineStatus: QuarantineStatus
+    
+    let icon: NSImage?
     
     var runningAsRoot:Bool { return uid == 0 }
     

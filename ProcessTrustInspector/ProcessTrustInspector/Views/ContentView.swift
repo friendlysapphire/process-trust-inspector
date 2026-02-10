@@ -103,8 +103,11 @@ struct ContentView: View {
 
                 List(visibleProcesses, id: \.pid, selection: $engine.selectedPID) { process in
                     HStack {
-                        Image(systemName: iconName(for: process.trustLevel))
-                            .foregroundColor(color(for: process.trustLevel))
+                        ProcessIconView(
+                            icon: process.icon,
+                            fallbackSystemName: iconName(for: process.trustLevel),
+                            fallbackColor: color(for: process.trustLevel)
+                        )
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(process.name ?? "Unknown")
@@ -202,5 +205,28 @@ struct ContentView: View {
         case .unknown:
             return .secondary
         }
+    }
+}
+
+private struct ProcessIconView: View {
+    let icon: NSImage?
+    let fallbackSystemName: String
+    let fallbackColor: Color
+
+    var body: some View {
+        Group {
+            if let icon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Image(systemName: fallbackSystemName)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundColor(fallbackColor)
+            }
+        }
+        .frame(width: 18, height: 18)
+        .cornerRadius(4) // subtle rounding; looks nice for app icons
     }
 }
