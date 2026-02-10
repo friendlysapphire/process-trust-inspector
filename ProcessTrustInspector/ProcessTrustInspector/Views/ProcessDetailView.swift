@@ -529,20 +529,24 @@ private struct FactRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
                 Text(fact.label + ":")
                     .foregroundColor(.secondary)
                     .frame(width: 170, alignment: .leading)
 
-                if let value = fact.value, !value.isEmpty {
-                    Text(value)
-                        .fontWeight(.medium)
-                } else {
-                    Text("Unknown")
-                        .foregroundColor(.secondary)
+                Group {
+                    if let value = fact.value, !value.isEmpty {
+                        Text(value)
+                            .fontWeight(.medium)
+                            .fixedSize(horizontal: false, vertical: true) // <-- wrap paths
+                    } else {
+                        Text("Unknown")
+                            .foregroundColor(.secondary)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Spacer()
+                Spacer(minLength: 0)
             }
 
             if (fact.value == nil || fact.value?.isEmpty == true),

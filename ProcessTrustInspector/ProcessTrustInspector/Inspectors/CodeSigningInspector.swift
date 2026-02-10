@@ -40,7 +40,9 @@ final class CodeSigningInspector {
         
         guard status == errSecSuccess, let staticCode else {
             //SecStaticCodeCreateWithPath reports failure
-            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status, trustCategory: .unknown, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signagure check failed"), entitlementsEvidence: EntitlementsEvidence.unknown(reason: "Signature check failed"))
+            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil,
+                                  status: status, trustCategory: .unknown, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signagure check failed"),
+                                  entitlementsEvidence: EntitlementsEvidence.unknown(reason: "Signature check failed"))
         }
         
         // get the signing info from that static code object
@@ -57,7 +59,9 @@ final class CodeSigningInspector {
         
         guard status == errSecSuccess, let signingInfo else {
             //SecCodeCopySigningInformation fails
-            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil, status: status, trustCategory: .unknown, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signing information unavailable."), entitlementsEvidence: EntitlementsEvidence.unknown(reason: "Signing information unavailable"))
+            return SigningSummary(team: nil, id: nil, certificates: nil, entitlements: nil, runtime: nil,
+                                  status: status, trustCategory: .unknown, appStorePolicyOIDEvidence: OIDEvidence.unknown(reason: "Signing information unavailable."),
+                                  entitlementsEvidence: EntitlementsEvidence.unknown(reason: "Signing information unavailable"))
         }
         
         // info is our master srtucture w/ signing info from the OS here
@@ -94,7 +98,8 @@ final class CodeSigningInspector {
             status: status,
             teamID: teamID,
             identifier: identifier,
-            certificates: certificates)
+            certificates: certificates,
+            path: path)
         
         //sort out entitlements evidence
         let entitlementsEvidence: EntitlementsEvidence
@@ -133,7 +138,7 @@ final class CodeSigningInspector {
     
     // MARK: - Trust Evaluation Logic
     /// Static function that takes raw signing evidence and returns a final trust category.
-    private func evaluateTrust(status: OSStatus, teamID: String?, identifier: String?, certificates: [SecCertificate]?) -> (TrustCategory,OIDEvidence) {
+    private func evaluateTrust(status: OSStatus, teamID: String?, identifier: String?, certificates: [SecCertificate]?, path: URL) -> (TrustCategory,OIDEvidence) {
         
         if status != 0 { return (.unknown, OIDEvidence.unknown(reason: "Signagure check failed"))}
         
@@ -171,11 +176,24 @@ final class CodeSigningInspector {
             }
         } else {
             // there's no team string, so it's either ad hoc (eg local dev, considered 'unsigned') or appl
+            // No Team ID *usually* means ad-hoc / local build but some Apple components
+            // may contain team id the way we expect. treat com.apple.* as Apple
+            // if the executable is in an OS-owned location.
             if let id = identifier, id.hasPrefix("com.apple") {
-                return (.apple, OIDEvidence.absent)
+                let p = path.path
+                let isSystemLocation =
+                    p.hasPrefix("/System/") ||
+                    p.hasPrefix("/usr/") ||
+                    p.hasPrefix("/bin/") ||
+                    p.hasPrefix("/sbin/")
+
+                if isSystemLocation {
+                    return (.apple, OIDEvidence.absent)
+                }
             }
-            
-            return (.unsigned,OIDEvidence.absent)
+
+            // Otherwise: "valid signature but no publisher identity we can establish" bucket.
+            return (.unsigned, OIDEvidence.absent)
         }
     }
     
