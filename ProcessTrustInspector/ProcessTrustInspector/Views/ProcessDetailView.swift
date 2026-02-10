@@ -220,6 +220,20 @@ private struct RuntimeConstraintRow: View {
     let label: String
     let status: RuntimeConstraintStatus
 
+    private var explanationText: String? {
+        let k = label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        if k == "app sandbox" {
+            return "A restricted execution environment that limits what the app can access unless explicitly allowed."
+        }
+
+        if k == "hardened runtime" {
+            return "A code-signing mode that enables additional runtime protections and is commonly required for notarization."
+        }
+
+        return nil
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -228,6 +242,20 @@ private struct RuntimeConstraintRow: View {
                     .font(.body)
                     .fontWeight(.medium)
                 Spacer()
+            }
+
+            if let expl = explanationText {
+                Text(expl)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 28)
+            }
+
+            if case .unknown(let reason) = status, let reason, !reason.isEmpty {
+                Text(reason)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .padding(.leading, 28)
             }
 
             if case .unknown(let reason) = status, let reason, !reason.isEmpty {

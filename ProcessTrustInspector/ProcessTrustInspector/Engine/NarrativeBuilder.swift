@@ -1,4 +1,3 @@
-
 //
 //  NarrativeBuilder.swift
 //  ProcessTrustInspector
@@ -207,12 +206,11 @@ struct NarrativeBuilder {
                 if snapshot.trustLevel == .apple {
                     lines.append("❓ Gatekeeper checks (typically not applicable to system components)")
                 } else {
-                    // Fix “Possible…” flow: keep the evaluation note on the same line.
+                    // Always two-line pattern: header line + smaller supporting line.
+                    lines.append("\(iconInferred(unknownReason: gk.unknownReason)) Gatekeeper checks")
                     let eval = gk.value?.trimmingCharacters(in: .whitespacesAndNewlines)
                     if let eval, !eval.isEmpty {
-                        lines.append("\(iconInferred(unknownReason: gk.unknownReason)) Gatekeeper checks — \(eval)")
-                    } else {
-                        lines.append("\(iconInferred(unknownReason: gk.unknownReason)) Gatekeeper checks")
+                        lines.append(eval)
                     }
                 }
             }
