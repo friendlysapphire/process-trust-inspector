@@ -13,7 +13,7 @@ struct ProcessDetailView: View {
                     if !narrative.summary.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Summary")
-                                .font(.caption)
+                                .font(.footnote)
                                 .foregroundColor(.secondary)
 
                             // Single Text node so drag-selection works naturally.
@@ -28,7 +28,7 @@ struct ProcessDetailView: View {
                     // Trust Classification (orientation, not verdict)
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Trust Classification")
-                            .font(.caption)
+                            .font(.footnote)
                             .foregroundColor(.secondary)
 
                         Text(narrative.trustClassification.label)
@@ -53,10 +53,20 @@ struct ProcessDetailView: View {
                         }
 
                         if !narrative.trustClassification.limits.isEmpty {
-                            Text(narrative.trustClassification.limits.map { "• \($0.text)" }.joined(separator: "\n"))
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 2)
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(narrative.trustClassification.limits, id: \.text) { limit in
+                                    HStack(alignment: .top, spacing: 6) {
+                                        Text("•")
+                                            .font(.callout)
+                                            .foregroundColor(.secondary)
+
+                                        Text(limit.text)
+                                            .font(.callout)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                            .padding(.top, 2)
                         }
                     }
                     .padding(12)
@@ -72,12 +82,22 @@ struct ProcessDetailView: View {
                     if !narrative.globalLimits.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Limits & Uncertainty")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-
-                            Text(narrative.globalLimits.map { "• \($0.text)" }.joined(separator: "\n"))
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(narrative.globalLimits, id: \.text) { limit in
+                                    HStack(alignment: .top, spacing: 6) {
+                                        Text("•")
+                                            .font(.callout)
+                                            .foregroundColor(.secondary)
+
+                                        Text(limit.text)
+                                            .font(.callout)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
                         }
                         .padding(.top, 4)
                     }
@@ -172,10 +192,20 @@ private struct SectionCard: View {
             }
 
             if !section.limits.isEmpty {
-                Text(section.limits.map { "• \($0.text)" }.joined(separator: "\n"))
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .padding(.top, 2)
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(section.limits, id: \.text) { limit in
+                        HStack(alignment: .top, spacing: 6) {
+                            Text("•")
+                                .font(.callout)
+                                .foregroundColor(.secondary)
+
+                            Text(limit.text)
+                                .font(.callout)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding(.top, 2)
             }
         }
         .padding(12)
@@ -246,21 +276,21 @@ private struct RuntimeConstraintRow: View {
 
             if let expl = explanationText {
                 Text(expl)
-                    .font(.footnote)
+                    .font(.callout)
                     .foregroundColor(.secondary)
                     .padding(.leading, 28)
             }
 
             if case .unknown(let reason) = status, let reason, !reason.isEmpty {
                 Text(reason)
-                    .font(.footnote)
+                    .font(.callout)
                     .foregroundColor(.secondary)
                     .padding(.leading, 28)
             }
 
             if case .unknown(let reason) = status, let reason, !reason.isEmpty {
                 Text(reason)
-                    .font(.footnote)
+                    .font(.callout)
                     .foregroundColor(.secondary)
                     .padding(.leading, 28)
             }
@@ -370,7 +400,7 @@ private struct ProvenanceBlock: View {
 
             // A+ explicit epistemology note (small, calm, always the same)
             Text("Gatekeeper checks are inferred from context and metadata. They are not directly observed here, and missing quarantine metadata does not confirm whether Gatekeeper ran.")
-                .font(.footnote)
+                .font(.callout)
                 .foregroundColor(.secondary)
                 .padding(.top, 2)
         }
@@ -420,14 +450,14 @@ private struct ProvenanceRow: View {
             case .inferred(let note):
                 if let note, !note.isEmpty {
                     Text(note)
-                        .font(.footnote)
+                        .font(.callout)
                         .foregroundColor(.secondary)
                         .padding(.leading, 28)
                 }
             case .unknown(let reason):
                 if let reason, !reason.isEmpty {
                     Text(reason)
-                        .font(.footnote)
+                        .font(.callout)
                         .foregroundColor(.secondary)
                         .padding(.leading, 28)
                 }
@@ -553,7 +583,7 @@ private struct FactRow: View {
                let reason = fact.unknownReason,
                !reason.isEmpty {
                 Text(reason)
-                    .font(.footnote)
+                    .font(.callout)
                     .foregroundColor(.secondary)
                     .padding(.leading, 180)
             }

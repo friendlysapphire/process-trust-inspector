@@ -72,7 +72,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Filter")
-                        .font(.caption)
+                        .font(.footnote)
                         .foregroundColor(.secondary)
 
                     Picker("Filter", selection: $selectedCategory) {
@@ -114,7 +114,7 @@ struct ContentView: View {
                                 .font(.headline)
 
                             Text(process.trustLevel.displayName)
-                                .font(.caption)
+                                .font(.footnote)
                                 .foregroundColor(.secondary)
                         }
                     }
