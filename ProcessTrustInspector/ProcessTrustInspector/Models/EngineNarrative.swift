@@ -28,8 +28,15 @@ import Foundation
 
 // MARK: - Top-level narrative output
 
-/// The Engine’s complete, structured explanation for a selected process.
-/// This is the single object the UI should render in Narrative Mode.
+/// The complete, structured narrative output for a selected process.
+///
+/// `EngineNarrative` is the primary product of the inspection engine.
+/// It represents everything the UI needs to render Narrative Mode:
+/// a summary, a trust orientation block, detailed sections, and
+/// global limits describing scope and uncertainty.
+///
+/// This model is explanation-first and intentionally avoids
+/// security verdicts or risk scoring.
 struct EngineNarrative {
     /// Title to use for navigation / header (usually process name, best-effort).
     var title: String
@@ -63,8 +70,13 @@ struct EngineNarrative {
 
 // MARK: - Trust Classification
 
-/// Top-of-detail orientation block.
-/// Keeps the tool calm and explanatory: “what kind of thing is this, based on what we can see?”
+/// High-level trust orientation for the selected executable.
+///
+/// This block answers the question:
+/// “What kind of software is this, based on static identity signals?”
+///
+/// It is not a safety verdict. It exists to orient the reader before
+/// diving into detailed sections and evidence.
 struct TrustClassificationBlock {
     /// A short label (e.g. “Apple Software”, “3rd Party, Developer ID”, “Unsigned / Untrusted”).
     var label: String
@@ -93,8 +105,15 @@ struct TrustClassificationBlock {
 
 // MARK: - Sections
 
-/// A section is the fundamental unit of explanation.
-/// Every section must carry: facts, interpretation, limits.
+/// A structured explanatory section within the narrative.
+///
+/// Each section groups:
+/// - Observed or derived facts
+/// - Interpretation explaining what those facts tend to mean
+/// - Explicit limits describing what is not proven or observed
+///
+/// Sections are designed to be independently readable and
+/// epistemically honest.
 struct NarrativeSection: Identifiable {
     let id = UUID()
 
@@ -118,8 +137,14 @@ struct NarrativeSection: Identifiable {
 
 // MARK: - Facts & Uncertainty
 
-/// A single factual line, optionally unknown with a reason.
-/// This supports both Narrative Mode (readable) and future Evidence Mode (structured fields).
+/// A single factual statement with optional uncertainty.
+///
+/// `FactLine` represents a concrete data point that may be:
+/// - Known (with a value)
+/// - Unknown (with an explicit reason)
+///
+/// This structure avoids forcing the UI to infer meaning from
+/// empty strings or sentinel values.
 struct FactLine: Identifiable {
     let id = UUID()
 
@@ -151,7 +176,11 @@ struct FactLine: Identifiable {
     }
 }
 
-/// Used both per-section (“limits”) and globally (“Limits & Uncertainty”).
+/// A non-alarmist statement describing uncertainty or scope limits.
+///
+/// `LimitNote` is used to explicitly communicate what a section
+/// or the entire tool does *not* establish, helping prevent
+/// over-interpretation of partial signals.
 struct LimitNote: Identifiable {
     let id = UUID()
     var text: String

@@ -22,6 +22,21 @@
 import SwiftUI
 import AppKit
 
+/// Renders the explanation-first narrative for a selected process.
+///
+/// `ProcessDetailView` is a pure view over `EngineNarrative`.
+/// It assumes inspection, trust evaluation, and narrative construction
+/// have already occurred in the engine layer.
+///
+/// Responsibilities:
+/// - Present the narrative summary, classification, and section cards.
+/// - Favor readability: wrapping, selection, and predictable layout.
+/// - Render limits/uncertainty as first-class UI content.
+///
+/// Non-responsibilities:
+/// - No system inspection.
+/// - No interpretation of trust signals beyond what is provided in the models.
+/// - No mutation of engine state.
 struct ProcessDetailView: View {
     let narrative: EngineNarrative
 
@@ -172,6 +187,15 @@ struct ProcessDetailView: View {
     }
 }
 
+/// A reusable card view for a single narrative section.
+///
+/// `SectionCard` renders a section title, a brief explanatory subtitle
+/// (interpretation), the section facts (via specialized blocks when needed),
+/// and the section limits.
+///
+/// It intentionally contains only lightweight routing logic to choose
+/// specialized renderers for well-known sections (e.g. Provenance).
+/// It does not compute or reinterpret trust meaning.
 private struct SectionCard: View {
     let section: NarrativeSection
 
@@ -244,13 +268,20 @@ private struct SectionCard: View {
 }
 
 // MARK: - Runtime Constraints
-
+/// UI-level status used to render runtime constraint facts.
+///
+/// This is derived from `FactLine` values (e.g. "Yes"/"No") plus unknown reasons.
+/// It is a rendering convenience and should not be treated as additional evidence.
 private enum RuntimeConstraintStatus: Equatable {
     case enabled
     case disabled
     case unknown(reason: String?)
 }
 
+/// Renders the Runtime Constraints section as rows with brief explanations.
+///
+/// This block is UI-only: it maps `FactLine` values into a scannable layout
+/// and surfaces unknown reasons without attempting additional interpretation.
 private struct RuntimeConstraintsBlock: View {
     let facts: [FactLine]
 
@@ -275,6 +306,13 @@ private struct RuntimeConstraintsBlock: View {
     }
 }
 
+/// Renders a single runtime-constraint row with an icon, label, and optional explanation.
+///
+/// The row may include:
+/// - A short “what this means” helper text (product copy).
+/// - An unknown reason when the underlying signal could not be obtained.
+///
+/// It also provides copy actions for user ergonomics.
 private struct RuntimeConstraintRow: View {
     let label: String
     let status: RuntimeConstraintStatus
@@ -386,7 +424,12 @@ private struct RuntimeConstraintRow: View {
 }
 
 // MARK: - Provenance
-
+/// UI-level status used to render provenance facts.
+///
+/// Provenance signals mix observed metadata (e.g. quarantine xattr) with
+/// inferred applicability (e.g. Gatekeeper likelihood).
+///
+/// This enum exists to keep the UI explicit about what is observed vs inferred.
 private enum ProvenanceStatus: Equatable {
     case present                  // ✅ observed
     case absent                   // ❌ observed absent
@@ -394,6 +437,14 @@ private enum ProvenanceStatus: Equatable {
     case unknown(reason: String?) // ⚠️ unavailable
 }
 
+/// Renders the Provenance section using provenance-specific semantics.
+///
+/// This block renders:
+/// - Quarantine metadata as an observed present/absent/unknown signal.
+/// - Gatekeeper checks as an inferred applicability note (unless unknown).
+///
+/// It is intentionally conservative: it does not claim Gatekeeper actually ran,
+/// and it does not attempt notarization assessment.
 private struct ProvenanceBlock: View {
     let facts: [FactLine]
 
@@ -454,6 +505,13 @@ private struct ProvenanceBlock: View {
     }
 }
 
+/// Renders a single provenance row with an icon, label, and optional note/reason.
+///
+/// The secondary line is used for:
+/// - Inferred notes (e.g. “evaluation possible/unlikely…”), or
+/// - Unknown reasons when provenance signals could not be determined.
+///
+/// Includes copy actions for the displayed value and supporting text.
 private struct ProvenanceRow: View {
     let label: String
     let status: ProvenanceStatus
@@ -576,7 +634,11 @@ private struct ProvenanceRow: View {
 }
 
 // MARK: - Fact rows (everything else)
-
+/// Generic renderer for a `FactLine` (label + value + optional unknown reason).
+///
+/// This is used for most narrative facts outside specialized sections.
+/// It favors readability for long values (paths) and preserves uncertainty
+/// by surfacing unknown reasons directly in the UI.
 private struct FactRow: View {
     let fact: FactLine
 

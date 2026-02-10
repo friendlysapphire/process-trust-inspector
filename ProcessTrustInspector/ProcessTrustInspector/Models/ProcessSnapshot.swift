@@ -29,30 +29,65 @@ import Foundation
 import Security
 import AppKit
 
+/// Represents whether the process declares use of the App Sandbox.
+///
+/// This value is derived from the presence of the
+/// `com.apple.security.app-sandbox` entitlement in the code signature.
+///
+/// An `unknown` result indicates that entitlement information
+/// was unavailable, not that the process is unsandboxed.
 enum AppSandboxStatus {
     case sandboxed
     case notSandboxed
     case unknown(reason: String)
 }
 
+/// Represents whether the executable declares use of the Hardened Runtime.
+///
+/// This status is inferred from code-signing flags and reflects
+/// declared enforcement configuration, not observed runtime behavior.
+///
+/// An `unknown` result indicates that hardened runtime information
+/// could not be retrieved.
 enum HardenedRuntimeStatus {
     case hasHardenedRuntime
     case noHardenedRuntime
     case unknown(reason: String)
 }
 
+/// Indicates whether the executable appears to be part of an app bundle.
+///
+/// A bundled executable is typically located inside
+/// `*.app/Contents/MacOS/`.
+///
+/// This classification is heuristic and may be unknown when
+/// the executable path is unavailable.
 enum BundledStatus {
     case bundled
     case bare
     case unknown(reason: String)
 }
 
+/// Represents the presence or absence of quarantine metadata on the executable.
+///
+/// Quarantine metadata is commonly applied to files downloaded
+/// from external sources and influences Gatekeeper behavior.
+///
+/// Absence of quarantine metadata does not imply local origin
+/// or safety.
 enum QuarantineStatus {
     case present
     case absent
     case unknown(reason: String)
 }
 
+/// Immutable, point-in-time snapshot of a running process.
+///
+/// `ProcessSnapshot` aggregates identity, signing, provenance,
+/// and execution-context metadata for a specific PID.
+///
+/// All fields are best-effort observations and may be incomplete
+/// due to scope limits, missing metadata, or race conditions.
 struct ProcessSnapshot {
     let pid: pid_t
     let uid: pid_t

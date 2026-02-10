@@ -21,8 +21,30 @@
 
 import Foundation
 
+/// Pure narrative transformer that converts a `ProcessSnapshot` into an
+/// explanation-first `EngineNarrative`.
+///
+/// `NarrativeBuilder` encodes v1 product intent:
+/// - Separates observed facts from interpretation and limits
+/// - Produces stable, human-readable section output for the UI
+/// - Treats missing data as normal and reports uncertainty explicitly
+///
+/// This type performs no inspection or system calls. It only formats and
+/// organizes already-collected snapshot data into a narrative structure.
 struct NarrativeBuilder {
 
+    /// Builds the complete narrative representation for a single process snapshot.
+    ///
+    /// This method:
+    /// - Constructs the top-level trust classification block
+    /// - Builds sectioned facts, interpretation, and limits (Identity, Code Signing, etc.)
+    /// - Generates the summary lines used in the detail view
+    ///
+    /// All output is best-effort and may contain unknown fields with explicit
+    /// reasons when metadata is unavailable.
+    ///
+    /// - Parameter snapshot: A point-in-time process identity snapshot produced by the engine/inspectors.
+    /// - Returns: A structured `EngineNarrative` that the UI can render without recomputing meaning.
     func build(from snapshot: ProcessSnapshot) -> EngineNarrative {
 
         // MARK: - Helpers (local to keep scope tight)

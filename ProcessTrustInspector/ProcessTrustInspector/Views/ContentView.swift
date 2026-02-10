@@ -24,11 +24,31 @@
 import SwiftUI
 import AppKit
 
+/// Primary application shell and navigation root.
+///
+/// `ContentView` owns the top-level `NavigationSplitView`, presenting:
+/// - The filtered, searchable list of running processes (sidebar)
+/// - The detail narrative for the selected process (detail pane)
+///
+/// Responsibilities:
+/// - Coordinate selection state with `InspectorEngine`.
+/// - Apply user-driven filtering, searching, and sorting.
+/// - Surface refresh timing and high-level trust categorization.
+///
+/// Non-responsibilities:
+/// - No process inspection or trust evaluation.
+/// - No narrative construction or interpretation logic.
+/// - No persistence or long-lived state beyond the UI session.
 struct ContentView: View {
     @State private var engine = InspectorEngine()
     @State private var selectedCategory: TrustFilter = .all
     @State private var searchText: String = ""
 
+    /// User-facing trust category filters for the process list.
+    ///
+    /// `TrustFilter` maps simplified trust categories to UI filter controls.
+    /// These categories reflect `TrustCategory` values produced by inspection,
+    /// but do not introduce new interpretation or semantics.
     enum TrustFilter: String, CaseIterable, Identifiable {
         case all = "All"
         case apple = "Apple"
@@ -45,6 +65,15 @@ struct ContentView: View {
     }
 
     // MARK: - Unified list pipeline (filter → search → sort)
+    /// Unified pipeline for deriving the visible process list.
+    ///
+    /// Applies filtering, text search, and stable sorting in a single,
+    /// explicit sequence to ensure predictable UI behavior.
+    ///
+    /// Order of operations:
+    /// 1. Trust-category filter
+    /// 2. Text search (name or bundle identifier)
+    /// 3. Stable alphabetical sort (name → PID)
     private var visibleProcesses: [ProcessSnapshot] {
         let base: [ProcessSnapshot]
         switch selectedCategory {
@@ -193,6 +222,11 @@ struct ContentView: View {
         }
     }
 
+    /// Returns the fallback SF Symbol name for a given trust category.
+    ///
+    /// Used only when a real application icon is unavailable.
+    /// The symbol choice is intentionally simple and symbolic,
+    /// not a security signal.
     private func iconName(for category: TrustCategory) -> String {
         switch category {
         case .apple:
@@ -208,6 +242,10 @@ struct ContentView: View {
         }
     }
 
+    /// Returns the fallback tint color associated with a trust category.
+    ///
+    /// Colors are used purely for visual grouping and scannability.
+    /// They do not encode severity, risk, or safety judgments.
     private func color(for category: TrustCategory) -> Color {
         switch category {
         case .apple:
@@ -222,6 +260,14 @@ struct ContentView: View {
     }
 }
 
+/// Renders a small process icon for the process list.
+///
+/// Prefers the real application icon when available, falling back to
+/// a system symbol with a category-specific tint when necessary.
+///
+/// Design notes:
+/// - Icons are optically balanced to appear consistent in the list.
+/// - This view is purely presentational and carries no semantic meaning.
 private struct ProcessIconView: View {
     let icon: NSImage?
     let fallbackSystemName: String

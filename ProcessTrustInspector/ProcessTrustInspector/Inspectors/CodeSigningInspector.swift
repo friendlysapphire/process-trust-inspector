@@ -23,28 +23,35 @@ import Foundation
 import Security
 
 
-
-// TODO: signing inspection path conflates “unsigned” with “inspection unavailable” in some failure cases.
-// (SecStaticCodeCreateWithPath fails, SecCodeCopySigningInformation fails)
-// probably means adding .unknown(str) to TC enum
-// Revisit in cleanup to v1 release
-
-
+/// Inspector responsible for extracting static code-signing identity
+/// and related security metadata from on-disk executables.
+///
+/// This type interfaces directly with Security.framework to retrieve:
+/// - Code signature validity
+/// - Team identifiers and signing identifiers
+/// - Certificate chains and policy evidence
+/// - Declared entitlements and hardened runtime flags
+///
+/// The output of this inspector is intentionally low-level and factual.
+/// It does not make safety judgments or user-facing interpretations.
 final class CodeSigningInspector {
     
-    /// Returns a best-effort static code identity summary for the
-    /// executable at the given path.
+    /// Produces a best-effort static code-signing summary for an executable file.
     ///
-    /// Important limitations:
-    /// - Inspection is performed against the on-disk binary, not the
-    ///   in-memory process image.
-    /// - Successful signing information does NOT imply runtime safety.
-    /// - Missing fields may reflect:
-    ///     - unsigned or ad-hoc signed code
-    ///     - insufficient privileges
-    ///     - file system access limitations
-    ///     - API behavior, not properties of the target
+    /// This inspection is performed against the on-disk binary and reflects
+    /// code-signing metadata only. It does not describe runtime memory state,
+    /// process behavior, or execution history.
     ///
+    /// Successful inspection does not imply safety or benign behavior.
+    /// Missing or partial results are expected and may result from:
+    /// - Unsigned or ad-hoc signed code
+    /// - Insufficient privileges
+    /// - Filesystem access limitations
+    /// - API behavior rather than properties of the target executable
+    ///
+    /// - Parameter path: Filesystem URL of the executable to inspect.
+    /// - Returns: A populated `SigningSummary`, or a best-effort failure summary
+    ///            when inspection cannot be completed.
     func getSigningSummary(path: URL) -> SigningSummary? {
         
         // get the static code object representing the code at path.
@@ -151,7 +158,26 @@ final class CodeSigningInspector {
     private static let appleTeamID = "59GAB85EFG"
     
     // MARK: - Trust Evaluation Logic
-    /// Static function that takes raw signing evidence and returns a final trust category.
+    /// Derives a high-level trust category from raw signing evidence.
+    ///
+    /// This method applies deterministic classification logic based on:
+    /// - Signature verification status
+    /// - Team identifier presence and value
+    /// - Certificate policy evidence
+    /// - Bundle identifier patterns
+    /// - Executable filesystem location
+    ///
+    /// The result represents a classification of publisher identity,
+    /// not a security verdict or safety assessment.
+    ///
+    /// - Parameters:
+    ///   - status: Result of signature verification.
+    ///   - teamID: Team identifier extracted from signing metadata, if present.
+    ///   - identifier: Signing identifier (bundle identifier), if present.
+    ///   - certificates: Certificate chain associated with the signature.
+    ///   - path: Filesystem path of the executable being evaluated.
+    /// - Returns: A tuple containing the inferred `TrustCategory` and
+    ///            any App Store policy OID evidence discovered.
     private func evaluateTrust(status: OSStatus, teamID: String?, identifier: String?, certificates: [SecCertificate]?, path: URL) -> (TrustCategory,OIDEvidence) {
         
         if status != 0 { return (.unknown, OIDEvidence.unknown(reason: "Signagure check failed"))}
@@ -211,8 +237,16 @@ final class CodeSigningInspector {
         }
     }
     
-    /// Parses the certificate dictionary to check if the App Store OID is present.
-    /// Returns true if found, false otherwise.
+    /// Inspects a certificate dictionary for the presence of the
+    /// Mac App Store certificate policy OID.
+    ///
+    /// The presence of this OID in the leaf certificate indicates
+    /// that the executable was distributed via the Mac App Store.
+    ///
+    /// - Parameter certDict: Parsed certificate metadata dictionary.
+    /// - Returns: `OIDEvidence.present` if the App Store OID is found,
+    ///            `.absent` if explicitly not present,
+    ///            or `.unknown` if the certificate structure cannot be inspected.
     private func containsAppleStoreOID(certDict:[String: Any]) -> OIDEvidence {
         
         // navigate this somewhat gross structure

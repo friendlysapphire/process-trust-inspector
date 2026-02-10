@@ -38,32 +38,34 @@ import Darwin
 // TODO: remove the dependency on NSWorkspace, allowing us to
 // TODO: inspect background daemons and non-GUI processes.
 
-/// Specialized inspector for retrieving low-level OS/kernel metadata.
+/// Low-level inspector responsible for producing point-in-time identity
+/// snapshots of running processes.
 ///
-/// Responsibilities:
-/// - Interface with NSWorkspace for higher level process info
-/// - Interface with libproc (Darwin) to extract BSD-level process info.
-/// - Resolve file system paths for active PIDs.
-/// - Bridge the gap between raw PIDs and the CodeSigningInspector.
+/// This type aggregates information from multiple system layers:
+/// - Application-level metadata via NSWorkspace.
+/// - BSD/kernel-level process metadata via libproc.
+/// - Static code-signing identity via CodeSigningInspector.
+/// - Filesystem provenance signals such as quarantine metadata.
 ///
-/// Note: All OS calls are subject to race conditions.
-/// A process may exit or its PID may be recycled between
-/// the time we fetch its info and the time we check its signature.
+/// All data returned is best-effort and reflects a moment-in-time view.
+/// Processes may exit, change state, or have their PIDs recycled during inspection.
 final class ProcessInspector {
     
-    
+    /// Helper responsible for extracting static code-signing identity
+    /// and related security metadata from executable files.
     private let signingInspector = CodeSigningInspector()
     
-    /// Generates a point-in-time identity snapshot for a given PID.
+    /// Produces a point-in-time identity snapshot for a running process.
     ///
     /// This method aggregates data from multiple system layers:
-    /// 1. App-level metadata (via NSWorkspace)
-    /// 2. Kernel-level BSD info (via libproc)
-    /// 3. Security/Identity metadata (via CodeSigningInspector)
+    /// 1. Application metadata (NSWorkspace)
+    /// 2. BSD process metadata (libproc)
+    /// 3. Static code-signing identity (CodeSigningInspector)
+    /// 4. Filesystem provenance signals (quarantine metadata)
     ///
-    /// - Parameter pid: The process ID to inspect.
-    /// - Returns: A populated ProcessSnapshot if the process is accessible,
-    ///            or nil if the process has exited or the system call fails.
+    /// - Parameter pid: The process identifier to inspect.
+    /// - Returns: A populated `ProcessSnapshot` if the process is accessible,
+    ///            or `nil` if the process exits or becomes unavailable during inspection.
     func getProcessSnapshot(from pid: pid_t) -> ProcessSnapshot? {
         
         // TODO: (identity): Migrate from pid_t to audit_token_t to ensure we aren't inspecting a recycled PID
@@ -154,6 +156,15 @@ final class ProcessInspector {
         
     }
     
+    /// Determines whether quarantine metadata is present on an executable file.
+    ///
+    /// This inspects the presence of the `com.apple.quarantine` extended attribute.
+    /// Absence of this attribute does not imply local origin or safety; metadata
+    /// may be missing, stripped, or never applied depending on the execution path.
+    ///
+    /// - Parameter url: The executable file URL to inspect.
+    /// - Returns: A `QuarantineStatus` representing observed presence, absence,
+    ///            or an unknown/error condition.
     private func getQuarantineStatus(for url: URL) -> QuarantineStatus {
         
         let pathstr = url.path

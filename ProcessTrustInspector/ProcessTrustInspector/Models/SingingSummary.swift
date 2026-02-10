@@ -23,9 +23,13 @@
 import Foundation
 import Security
 
-/// Simplified code-signing identity categories intended for non-technical users.
-/// These categories describe *static code-signing identity*for the on-disk executable,
-/// not runtime behavior or “safety.”
+/// Simplified static code-signing identity categories.
+///
+/// These categories describe the *publisher identity* established
+/// by the code signature on the on-disk executable.
+///
+/// They do not describe runtime behavior, safety, notarization,
+/// or whether the software should be trusted to execute.
 enum TrustCategory {
     case apple      // Signed by Apple (OS Component)
     case appStore   // Signed by Apple (App Store Distribution)
@@ -49,7 +53,13 @@ enum TrustCategory {
     }
 }
 
-/// Evidence for presence/absence of the App Store certificate policy OID in signing certificates.
+/// Evidence for the presence or absence of a specific certificate policy OID.
+///
+/// In v1, this is used to detect the Mac App Store distribution policy
+/// by inspecting certificate policy extensions.
+///
+/// An `unknown` result indicates that certificate inspection was
+/// incomplete or unavailable, not that the policy is absent.
 enum OIDEvidence {
     
     case present(oid: String)
@@ -66,14 +76,30 @@ enum OIDEvidence {
     }
 }
 
-/// Whether entitlements appear to exist for the code signature (best-effort).
+/// Indicates whether entitlement data appears to exist in the code signature.
+///
+/// This reflects whether entitlements were observed in signing metadata,
+/// not whether any entitlements were granted, enforced, or exercised
+/// at runtime.
 enum EntitlementsEvidence {
     case present
     case absent
     case unknown(reason: String)
 }
     
-/// Best-effort summary of signing-related metadata for an on-disk executable.
+/// Best-effort summary of static code-signing metadata for an executable.
+///
+/// `SigningSummary` represents identity and configuration information
+/// derived from Security.framework inspection of the on-disk binary.
+///
+/// All fields are best-effort and may be incomplete due to:
+/// - unsigned or ad-hoc signed code
+/// - insufficient privileges
+/// - missing certificate metadata
+/// - API or file-system limitations
+///
+/// This structure does not describe runtime memory state, behavior,
+/// or safety.
 struct SigningSummary {
     let teamID: String?
     let identifier: String?
@@ -85,7 +111,7 @@ struct SigningSummary {
     let entitlementsEvidence: EntitlementsEvidence
     
 
-    // computed trust level struct
+    //// Final, simplified trust category derived from signing metadata.
     let trustCategory: TrustCategory
     
     init(team: String?, id: String?, certificates: [SecCertificate]?, entitlements: [String: Any]?, runtime: Bool?, status: OSStatus, trustCategory: TrustCategory, appStorePolicyOIDEvidence: OIDEvidence, entitlementsEvidence: EntitlementsEvidence) {

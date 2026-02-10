@@ -27,6 +27,16 @@ import Observation
 import AppKit
 import Darwin
 
+/// High-level state coordinator for the Process & Trust Inspector.
+///
+/// `InspectorEngine` is the UI-facing source of truth. It owns:
+/// - The current process list (from `NSWorkspace`)
+/// - The current selection (PID + snapshot)
+/// - The current narrative output (the primary product shown in the detail view)
+///
+/// The engine does not perform low-level inspection itself. It orchestrates
+/// specialized inspectors and transforms their output into stable, explanatory
+/// models for the UI.
 @Observable
 final class InspectorEngine {
     
@@ -60,16 +70,12 @@ final class InspectorEngine {
     // builds narrative structures for UI
     private let narrativeBuilder = NarrativeBuilder()
     
-    /// Coordinates the inspection of a specific process.=
-    /// This method acts as the primary bridge between the user's selection
-    /// and the low-level inspection subsystem.
+    /// Selects a process by PID and updates the UI-facing state for the detail pane.
     ///
-    /// Workflow:
-    /// 1. Updates the tracking PID for the UI.
-    /// 2. Delegates data collection to the ProcessInspector.
-    /// 3. Updates the 'narrative' (explanation text) based on the result.
+    /// This is a best-effort selection: the PID may be stale if the process exits
+    /// or the list changes between refresh and selection.
     ///
-    /// - Parameter pid: The process identifier to inspect.
+    /// - Parameter pid: The process identifier to select.
     func select(pid: pid_t) {
         
         guard let snapshot = self.processes.first(where: { $0.pid == pid} ) else {
@@ -82,7 +88,9 @@ final class InspectorEngine {
     }
 
     
-    /// Clears out stored properties associated with previosuly selected process
+    /// Clears the current selection and associated detail output.
+    ///
+    /// After calling this, the UI should return to the “Select a process to inspect” state.
     func clearSelection() {
         
         self.selectedPID = nil
@@ -90,13 +98,13 @@ final class InspectorEngine {
         self.selectedNarrative = nil
     }
     
-    /// Refreshes the point-in-time list of running GUI applications.
+    /// Refreshes the point-in-time list of running applications visible to `NSWorkspace`.
     ///
-    /// Scope limitation:
-    /// - Uses NSWorkspace, so this only includes user-space GUI apps.
-    /// - CLI tools and background processes are intentionally out of
-    ///   scope at this stage.
-    
+    /// This is intentionally scoped to what LaunchServices/NSWorkspace exposes (mostly GUI apps,
+    /// agents, and helpers). It is not a complete view of all system processes.
+    ///
+    /// Refresh also updates diagnostic counters and clears the current selection
+    /// if the selected PID is no longer present.
     func refresh() {
         self.refreshCount += 1
         self.processes = []
@@ -122,6 +130,7 @@ final class InspectorEngine {
         self.runningAppCount = self.processes.count
     }
 
+    /// Creates the engine and performs an initial refresh to populate the process list.
     init() {
         refresh()
     }
