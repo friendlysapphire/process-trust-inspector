@@ -37,6 +37,8 @@ struct ProcessDetailView: View {
                         if !narrative.trustClassification.interpretation.isEmpty {
                             Text(narrative.trustClassification.interpretation.joined(separator: "\n"))
                                 .font(.body)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.top, 2)
                         }
 
@@ -176,8 +178,10 @@ private struct SectionCard: View {
             // Move the "what this is" sentence to the top as a subtle subtitle.
             if !section.interpretation.isEmpty {
                 Text(section.interpretation.joined(separator: "\n"))
-                    .font(.callout)
-                    .foregroundColor(.secondary)
+                    .font(.body)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 2)
             }
 
             if isRuntimeConstraintsSection {
@@ -203,6 +207,9 @@ private struct SectionCard: View {
                             Text(limit.text)
                                 .font(.callout)
                                 .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)        // allow multi-line
+                                .frame(maxWidth: .infinity, alignment: .leading)     // take the available width
+                                .layoutPriority(1)                                   // don't let it get squeezed/truncated
                         }
                     }
                 }
