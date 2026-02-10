@@ -1,3 +1,24 @@
+//
+//  ProcessDetailView.swift
+//  Process Trust Inspector
+//
+//  Purpose:
+//  Renders the explanation-first narrative for a selected process.
+//
+//  Responsibilities:
+//  - Displays summary, trust classification, and narrative sections
+//  - Applies consistent visual treatment for facts, limits, and uncertainty
+//  - Handles layout and text behavior for readability
+//
+//  Non-Responsibilities:
+//  - Performing inspection or interpretation
+//  - Mutating engine state
+//
+//  Notes:
+//  - Text truncation and wrapping are intentionally managed to favor clarity
+//  - This view assumes narrative content is already validated by the engine
+//
+
 import SwiftUI
 import AppKit
 

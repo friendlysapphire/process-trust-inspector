@@ -1,26 +1,36 @@
 //
 //  SigningSummary.swift
 //  ProcessTrustInspector
-//  Created by Aaron Weiss on 1/31/26.
 //
+//  Best-effort summary of static code-signing identity for an on-disk executable.
 //
-//  Represents a best-effort summary of static code-signing
-//  identity for an on-disk executable.
+//  Responsibilities:
+//  - Carry Security.framework-derived signing metadata for a file path.
+//  - Preserve uncertainty explicitly (unknown-with-reason) where inspection is incomplete.
+//  - Provide a simplified, UI-friendly trust classification (TrustCategory).
 //
-//  This data is derived from Security.framework inspection
-//  of the executable file and does not prove runtime behavior.
+//  Non-responsibilities:
+//  - Does not prove runtime behavior.
+//  - Does not perform Gatekeeper / notarization assessment.
+//  - Does not interpret “safety” or make verdicts.
+//
+//  Notes:
+//  - Most fields originate from SecCodeCopySigningInformation / related Security APIs.
+//  - Unknown values are expected in normal operation and should be interpreted as unavailable,
+//    not suspicious.
+//
 
 import Foundation
 import Security
 
-/// Models the 4 foundational code signature types.
-/// This abstraction simplifies macOS app security foundations into
-/// categories that are meaningful to a non-technical user.
+/// Simplified code-signing identity categories intended for non-technical users.
+/// These categories describe *static code-signing identity*for the on-disk executable,
+/// not runtime behavior or “safety.”
 enum TrustCategory {
     case apple      // Signed by Apple (OS Component)
     case appStore   // Signed by Apple (App Store Distribution)
     case developer  // Signed by Developer ID (Direct Distribution)
-    case unsigned   // Ad-hoc or Broken Signature
+    case unsigned   // No publisher identity (Ad-hoc or unsigned)
     case unknown    // something failed
     
     var displayName: String {
@@ -39,6 +49,7 @@ enum TrustCategory {
     }
 }
 
+/// Evidence for presence/absence of the App Store certificate policy OID in signing certificates.
 enum OIDEvidence {
     
     case present(oid: String)
@@ -55,13 +66,14 @@ enum OIDEvidence {
     }
 }
 
+/// Whether entitlements appear to exist for the code signature (best-effort).
 enum EntitlementsEvidence {
     case present
     case absent
     case unknown(reason: String)
 }
     
-
+/// Best-effort summary of signing-related metadata for an on-disk executable.
 struct SigningSummary {
     let teamID: String?
     let identifier: String?

@@ -2,9 +2,26 @@
 //  EngineNarrativeModels.swift
 //  ProcessTrustInspector
 //
-//  output model: structured narrative + fact blocks.
-//  This is the UI-facing contract produced by the Engine.
-//  Views render this; they do not interpret trust or recompute meaning.
+//  UI-facing output models: structured narrative + fact blocks.
+//
+//  This file defines the “render contract” produced by InspectorEngine.
+//  Views render these models; they do not interpret trust signals or
+//  recompute meaning.
+//
+//  Responsibilities:
+//  - Provide stable, structured types for Narrative Mode rendering.
+//  - Represent facts + unknown reasons without forcing UI string parsing.
+//  - Carry explicit limits/uncertainty at both section and global scope.
+//
+//  Non-responsibilities:
+//  - No OS inspection logic (handled by inspectors/engines).
+//  - No UI layout or formatting logic (handled by Views).
+//  - No trust evaluation rules (handled by signing/inspection components).
+//
+//  Notes:
+//  - These models are intentionally simple and “best-effort friendly”.
+//    Missing data should be represented explicitly as unknown, not inferred.
+//
 //
 
 import Foundation
@@ -134,7 +151,6 @@ struct FactLine: Identifiable {
     }
 }
 
-/// A non-alarmist caveat.
 /// Used both per-section (“limits”) and globally (“Limits & Uncertainty”).
 struct LimitNote: Identifiable {
     let id = UUID()

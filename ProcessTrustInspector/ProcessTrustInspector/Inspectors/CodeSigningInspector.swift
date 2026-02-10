@@ -1,8 +1,22 @@
 //
 //  CodeSigningInspector.swift
-//  ProcessTrustInspector
+//  Process Trust Inspector
 //
-//  Created by Aaron Weiss on 1/31/26.
+//  Purpose:
+//  Inspects static code-signing metadata for on-disk executables.
+//
+//  Responsibilities:
+//  - Queries Security.framework for signing information
+//  - Extracts identity, entitlements, and policy evidence
+//  - Produces raw inputs for trust classification
+//
+//  Non-Responsibilities:
+//  - Making safety judgments or verdicts
+//  - Explaining results to users
+//
+//  Notes:
+//  - Inspection is static and does not reflect runtime memory state
+//  - Failures are expected and must be handled by callers
 //
 
 import Foundation

@@ -2,7 +2,27 @@
 //  ProcessSnapshot.swift
 //  ProcessTrustInspector
 //
-//  Created by Aaron Weiss on 1/31/26.
+//  Immutable, point-in-time snapshot of a running process.
+//
+//  A ProcessSnapshot aggregates identity, signing, provenance, and
+//  execution-context metadata into a single structure suitable for
+//  explanation-first analysis.
+//
+//  Responsibilities:
+//  - Represent best-effort observations about a specific PID.
+//  - Provide derived properties (sandboxing, hardened runtime, trust level)
+//    without recomputing or inferring beyond available evidence.
+//  - Preserve uncertainty explicitly (unknown-with-reason).
+//
+//  Non-responsibilities:
+//  - No OS inspection logic (handled by inspectors).
+//  - No UI formatting or presentation concerns.
+//  - No policy decisions or security verdicts.
+//
+//  Notes:
+//  - All fields are subject to race conditions: a process may exit or change
+//    between enumeration and inspection.
+//  - Missing data should be interpreted as unavailable, not suspicious.
 //
 
 import Foundation
@@ -54,7 +74,7 @@ struct ProcessSnapshot {
         
         // if the structure itself is there and we have no entitlement info at all, there was an error
         guard let entitlements = signingSummary?.entitlementsDict else {
-            return AppSandboxStatus.unknown(reason: "Unable to retrieve entitlements dictionary structure for this process.")
+            return AppSandboxStatus.unknown(reason: "No entitlements dictionary was available in the code signature.")
         }
         
         let sboxed = entitlements["com.apple.security.app-sandbox"] as? Bool ?? false

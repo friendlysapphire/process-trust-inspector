@@ -2,9 +2,31 @@
 //  ProcessInspector.swift
 //  ProcessTrustInspector
 //
+//  Core process inspection and identity aggregation.
+//
+//  This file defines ProcessInspector, a low-level inspector responsible for
+//  producing point-in-time identity snapshots of running processes.
+//
+//  Responsibilities:
+//  - Enumerate running applications via NSWorkspace.
+//  - Resolve executable paths and bundle context.
+//  - Retrieve BSD-level process metadata (UID, parent PID) via libproc.
+//  - Query code-signing identity and entitlements via CodeSigningInspector.
+//  - Detect quarantine metadata on executable files.
+//
+//  Non-responsibilities:
+//  - No UI concerns.
+//  - No state management or caching.
+//  - No interpretation or trust narratives (handled elsewhere).
+//
+//  Notes:
+//  - All OS queries are inherently racy: processes may exit or PIDs may be
+//    recycled between inspection steps.
+//  - This inspector intentionally operates on best-effort signals and may
+//    return partial data when system metadata is unavailable.
+//
 //  Created by Aaron Weiss on 2/1/26.
 //
-
 import Foundation
 import Observation
 import AppKit

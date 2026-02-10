@@ -1,12 +1,22 @@
 //
 //  NarrativeBuilder.swift
-//  ProcessTrustInspector
+//  Process Trust Inspector
 //
+//  Purpose:
 //  Builds the explanation-first narrative for a selected process.
 //
-//  This file intentionally contains no state management,
-//  no inspection logic, and no UI concerns.
-//  It is a pure transformation from ProcessSnapshot → EngineNarrative.
+//  Responsibilities:
+//  - Transforms ProcessSnapshot data into human-readable narrative sections
+//  - Separates observed facts from interpretation and limits
+//  - Produces stable, versioned narrative output for v1
+//
+//  Non-Responsibilities:
+//  - Performing inspection or system calls
+//  - Managing UI state or presentation
+//
+//  Notes:
+//  - All output is best-effort and may include unknown or unavailable fields
+//  - This file encodes product intent as much as technical behavior
 //
 
 import Foundation

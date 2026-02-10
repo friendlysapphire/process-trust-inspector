@@ -2,6 +2,22 @@
 //  ContentView.swift
 //  ProcessTrustInspector
 //
+//  Primary application shell and process list UI.
+//
+//  Responsibilities:
+//  - Own the top-level navigation split view (process list ↔ detail view).
+//  - Present the filtered, searchable list of running processes.
+//  - Coordinate selection state with InspectorEngine.
+//  - Surface refresh state and high-level trust categorization.
+//
+//  Design notes:
+//  - This view does not perform inspection or interpretation.
+//    All process analysis is delegated to InspectorEngine.
+//  - UI logic here is intentionally lightweight and reactive,
+//    favoring clarity over extensibility for v1.
+//  - Sorting, filtering, and search are treated as a single,
+//    explicit pipeline for predictability.
+//
 //  Created by Aaron Weiss on 1/31/26.
 //
 
@@ -51,14 +67,12 @@ struct ContentView: View {
         } else {
             let q = trimmedQuery.lowercased()
             searched = base.filter { p in
-                // Keep it simple + forgiving: name OR bundle id match.
                 let name = (p.name ?? "").lowercased()
                 let bundle = (p.bundleIdentifier ?? "").lowercased()
                 return name.contains(q) || bundle.contains(q)
             }
         }
 
-        // Alpha sort: name (case-insensitive) then PID to stabilize ordering.
         return searched.sorted {
             let aName = ($0.name ?? "Unknown").lowercased()
             let bName = ($1.name ?? "Unknown").lowercased()
@@ -92,6 +106,7 @@ struct ContentView: View {
                         Text(lastRefreshDisplay)
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .monospacedDigit()
                     }
                     .padding(.top, 2)
                 }
@@ -129,7 +144,6 @@ struct ContentView: View {
                     Button {
                         engine.refresh()
 
-                        // Refresh might invalidate selection.
                         if let pid = engine.selectedPID,
                            !visibleProcesses.contains(where: { $0.pid == pid }) {
                             engine.clearSelection()
@@ -219,14 +233,16 @@ private struct ProcessIconView: View {
                 Image(nsImage: icon)
                     .resizable()
                     .scaledToFit()
+                    .scaleEffect(1.15)   // 👈 optical compensation
             } else {
                 Image(systemName: fallbackSystemName)
+                    .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
                     .foregroundColor(fallbackColor)
             }
         }
         .frame(width: 18, height: 18)
-        .cornerRadius(4) // subtle rounding; looks nice for app icons
+        .cornerRadius(4)
     }
 }
