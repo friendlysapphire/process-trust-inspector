@@ -93,22 +93,6 @@ All signing and trust signals are derived from **on-disk executables**, not live
 
 ---
 
-## Copy & selection behavior
-
-This tool intentionally distinguishes between **narrative text** and **structured evidence** in its UI.
-
-Narrative content (summaries, interpretations, and limits) is rendered as continuous text blocks so it can be freely selected and copied like a document or report.
-
-Structured evidence rows (such as runtime constraints and provenance signals) are presented as discrete, semantic rows with icons that match macOS system conventions and accessibility expectations.
-
-Because of current SwiftUI limitations, these structured rows do not support seamless multi-line drag selection across multiple fields. Where copying structured values is useful, explicit copy actions are provided instead of relying on drag selection.
-
-This is a deliberate tradeoff:
-- **Narrative text** is optimized for reading and copying
-- **Evidence rows** are optimized for clarity, structure, and correctness
-
----
-
 ## Note on WebKit helper processes and "Apple Software"
 
 Some processes shown in the list are Apple-provided WebKit helper processes, not third-party executables. Examples include display names such as "ChatGPT ... Web Content" and "zoom.us ... Web Content."
