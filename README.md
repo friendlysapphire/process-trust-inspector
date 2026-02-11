@@ -55,11 +55,23 @@ The goal is visibility and understanding, not judgment.
 
 ---
 
+## Who this is for
+
+- macOS engineers
+- Security engineers and defenders
+- Incident responders
+- Platform and endpoint teams
+- Curious power users who want explanations, not alerts
+
+If you have ever asked "what exactly does macOS know about this process?", this tool may interest you.
+
+---
+
 ## Design philosophy
 
 ### Explanation-first
 
-macOS security signals are subtle, layered, and frequently misunderstood.
+macOS security signals are layered and can be difficult to understand.
 
 This tool treats each signal as *evidence*, not a conclusion, and explains:
 - what the signal means
@@ -68,7 +80,7 @@ This tool treats each signal as *evidence*, not a conclusion, and explains:
 
 ### Best-effort, explicit uncertainty
 
-macOS inspection APIs are inherently partial and time-sensitive; processes can exit or change while they are being inspected. Metadata may be missing, and privileges vary.
+macOS inspection APIs are inherently partial and time-sensitive; processes can exit or change while they are being inspected. Metadata may be missing and privileges vary.
 
 This tool makes uncertainty explicit instead of hiding it:
 - Unknown values are labeled and explained
@@ -165,18 +177,6 @@ Adding SwiftUI expertise on top of that was outside my primary interest and too 
 All inspection logic, trust classification, signal evaluation, narrative construction, and system interaction code were designed and implemented by me.
 
 Most SwiftUI implementation code was produced with assistance from OpenAI and Gemini. The UI layout reflects my design decisions; I chose to use AI tools for SwiftUI implementation rather than invest cognitive energy into framework mechanics.
-
----
-
-## Who this is for
-
-- macOS engineers
-- Security engineers and defenders
-- Incident responders
-- Platform and endpoint teams
-- Curious power users who want explanations, not alerts
-
-If you have ever asked "what exactly does macOS know about this process?", this tool is for you.
 
 ---
 
