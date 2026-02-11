@@ -50,7 +50,7 @@ This tool intentionally does **not**:
 A valid code signature does **not** imply safety.  
 An unsigned process does **not** imply maliciousness.
 
-The goal isvisibility and understanding, not judgment.
+The goal is visibility and understanding, not judgment.
 
 ---
 
