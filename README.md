@@ -69,8 +69,6 @@ If you have ever asked "what exactly does macOS know about this process?", this 
 
 ## Design philosophy
 
-### Explanation-first
-
 macOS security signals are layered and can be difficult to understand.
 
 This tool treats each signal as *evidence*, not a conclusion, and explains:
@@ -82,7 +80,8 @@ This tool treats each signal as *evidence*, not a conclusion, and explains:
 
 macOS inspection APIs are inherently partial and time-sensitive; processes can exit or change while they are being inspected. Metadata may be missing and privileges vary.
 
-This tool makes uncertainty explicit instead of hiding it:
+This tool tries to make uncertainty explicit.
+
 - Unknown values are labeled and explained
 - Limits are surfaced alongside results
 - Absence of data is never silently reinterpreted
