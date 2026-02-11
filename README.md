@@ -121,7 +121,7 @@ The name indicates which application launched the helper, not who supplied the e
 This distinction is intentional in v1. Future versions may make this relationship more explicit in the UI.
 ---
 
-### Scope and limitations (v1)
+## Scope and limitations (v1)
 
 Version 1 intentionally focuses on a **stable, interpretable core**.
 
@@ -140,6 +140,12 @@ Explicitly excluded from v1:
 - XPC service relationships
 
 These exclusions are deliberate for v1 but may be revisited in the future. Many of these signals are noisy, privilege-sensitive, or easy to misinterpret without additional context.
+
+### Process enumeration scope
+
+Process listing in v1 is derived from NSWorkspace (LaunchServices). This includes user applications, background agents, and many helper processes, but it does not provide a complete view of all running processes on the system.
+
+Command-line tools, daemons without LaunchServices registration, and certain low-level system processes may not appear in the list.
 
 ---
 
