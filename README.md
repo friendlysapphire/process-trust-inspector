@@ -99,8 +99,8 @@ This is a deliberate tradeoff:
 
 ## Note on WebKit helper processes and "Apple Software"
 
-Some processes shown in the list (for example entries labeled  
-**"ChatGPT ... Web Content"** or **"zoom.us ... Web Content"**) are **WebKit helper processes provided by Apple**, not third-party executables.
+Some processes shown in the list are Apple-provided WebKit helper processes, not third-party executables.
+Examples include "ChatGPT ... Web Content" and "zoom.us ... Web Content."
 
 These processes use Apple system binaries such as:
 
