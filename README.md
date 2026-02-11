@@ -119,6 +119,7 @@ Based on this evidence, the process is classified as **Apple Software**, even th
 The name indicates which application launched the helper, not who supplied the executable.
 
 This distinction is intentional in v1. Future versions may make this relationship more explicit in the UI.
+
 ---
 
 ## Scope and limitations (v1)
