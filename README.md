@@ -1,4 +1,5 @@
 # macOS Process Trust Inspector
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **Helpful process identity inspection for macOS.**
 
@@ -180,6 +181,6 @@ If you've ever asked *"what exactly does macOS know about this process?"*, this 
 
 ## License
 
-MIT License.
+MIT License (c) 2026 Aaron Weiss.
 
 You are free to use, modify, and distribute this software under the terms of the MIT license. See the `LICENSE` file for details.
