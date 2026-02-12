@@ -119,7 +119,7 @@ This distinction is intentional in v1. Future versions may make this relationshi
 
 ## Scope and limitations (v1)
 
-Version 1 intentionally focuses on a **stable, interpretable core**.
+Version 1 intentionally focuses on a stable, interpretable core.
 
 Included in v1:
 - Static code-signing identity
