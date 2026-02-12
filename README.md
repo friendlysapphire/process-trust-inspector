@@ -48,8 +48,8 @@ This tool intentionally does **not**:
 - Observe runtime memory behavior
 - Perform Gatekeeper or notarization assessments
 
-A valid code signature does **not** imply safety.  
-An unsigned process does **not** imply malicious intent.
+A valid code signature does not imply safety.  
+An unsigned process does not imply malicious intent.
 
 The goal is visibility and understanding, not judgment.
 
@@ -71,10 +71,10 @@ If you have ever asked "what exactly does macOS know about this process?", this 
 
 macOS security signals are layered and can be difficult to understand.
 
-This tool treats each signal as *evidence*, not a conclusion, and explains:
+This tool treats each signal as evidence, not a conclusion, and explains:
 - what the signal means
 - where it applies
-- what it does **not** prove
+- what it does not prove
 
 ### Best-effort, explicit uncertainty
 
