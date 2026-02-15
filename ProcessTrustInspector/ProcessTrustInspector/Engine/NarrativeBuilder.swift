@@ -45,7 +45,7 @@ struct NarrativeBuilder {
     ///
     /// - Parameter snapshot: A point-in-time process identity snapshot produced by the engine/inspectors.
     /// - Returns: A structured `EngineNarrative` that the UI can render without recomputing meaning.
-    func build(from snapshot: ProcessSnapshot) -> EngineNarrative {
+    func build(from snapshot: ProcessSnapshot, _ parentInfo: ParentProcessInfo) -> EngineNarrative {
 
         // MARK: - Helpers (local to keep scope tight)
         func formatStartTime(_ date: Date?) -> String? {
@@ -313,23 +313,6 @@ struct NarrativeBuilder {
                 FactLine(label: "PID", value: "\(snapshot.pid)"),
                 FactLine(label: "User ID", value: "\(snapshot.uid)"),
                 FactLine(label: "Running as root", value: snapshot.runningAsRoot ? "Yes" : "No"),
-
-                FactLine(
-                    label: "Parent PID",
-                    value: snapshot.parentPid.map { String($0) },
-                    unknownReason: snapshot.parentPid == nil
-                        ? "Parent PID unavailable (race condition or not visible in current scope)."
-                        : nil
-                ),
-
-                FactLine(
-                    label: "Parent process",
-                    value: snapshot.parentPidName,
-                    unknownReason: snapshot.parentPidName == nil
-                        ? "Parent process name not visible via NSWorkspace."
-                        : nil
-                ),
-
                 FactLine(
                     label: "Bundle identifier",
                     value: snapshot.bundleIdentifier,
@@ -371,7 +354,116 @@ struct NarrativeBuilder {
                 LimitNote(text: "Missing fields are normal and may reflect metadata absence, scope limits, or race conditions.")
             ]
         )
+        // MARK: - Process Lineage
+        let lineage: NarrativeSection = {
+            func trustLabel(_ s: ProcessSnapshot) -> String {
+                s.trustLevel.displayName
+            }
 
+            func yesNo(_ b: Bool) -> String { b ? "Yes" : "No" }
+
+            let parentLine: FactLine
+            var extraFacts: [FactLine] = []
+
+            switch parentInfo {
+            case .noParentPID(let reason):
+                parentLine = FactLine(
+                    label: "Parent process",
+                    value: nil,
+                    unknownReason: reason ?? "Parent PID not present in the process snapshot."
+                )
+
+            case .parentNotVisible(let pid, _):
+                parentLine = FactLine(
+                    label: "Parent process",
+                    value: "PID \(pid) (not listed by NSWorkspace)",
+                    unknownReason: nil
+                )
+
+            case .parentAvailable(let parent):
+                let parentName = parent.name ?? "Unknown"
+                parentLine = FactLine(
+                    label: "Parent process",
+                    value: "\(parentName) (PID \(parent.pid))",
+                    unknownReason: nil
+                )
+
+                let parentTrust = trustLabel(parent)
+                let childTrust = snapshot.trustLevel.displayName
+                extraFacts.append(
+                    FactLine(
+                        label: "Trust category",
+                        value: "\(parentTrust) -> \(childTrust)",
+                        unknownReason: nil
+                    )
+                )
+
+                extraFacts.append(
+                    FactLine(
+                        label: "Running as root",
+                        value: "\(yesNo(parent.runningAsRoot)) -> \(yesNo(snapshot.runningAsRoot))",
+                        unknownReason: nil
+                    )
+                )
+
+                extraFacts.append(
+                    FactLine(
+                        label: "User ID",
+                        value: "\(parent.uid) -> \(snapshot.uid)",
+                        unknownReason: nil
+                    )
+                )
+
+                // Single gentle indicator (not a warning system)
+                var differences: [String] = []
+
+                if parent.trustLevel != snapshot.trustLevel {
+                    differences.append("Trust category differs")
+                }
+
+                if !parent.runningAsRoot && snapshot.runningAsRoot {
+                    differences.append("Privilege increases (root child)")
+                }
+
+                if parent.uid != snapshot.uid {
+                    differences.append("User ID differs")
+                }
+
+                if differences.isEmpty {
+                    extraFacts.append(
+                        FactLine(
+                            label: "Relationship observation",
+                            value: "No significant differences observed",
+                            unknownReason: nil
+                        )
+                    )
+                } else {
+                    extraFacts.append(
+                        FactLine(
+                            label: "Relationship observation",
+                            value: "Differences observed: " + differences.joined(separator: "; "),
+                            unknownReason: nil
+                        )
+                    )
+                }
+            }
+
+            var facts: [FactLine] = [parentLine]
+            facts.append(contentsOf: extraFacts)
+
+            return NarrativeSection(
+                title: "Process Lineage",
+                facts: facts,
+                interpretation: [
+                    "This section describes the parent process and relationship context",
+                    "Selected characteristics are shown as parent → child for direct comparison."
+                ],
+                limits: [
+                    LimitNote(text: "The parent may not appear in the NSWorkspace process list."),
+                    LimitNote(text: "Parent relationships are point-in-time and may change between refreshes.")
+                ]
+            )
+        }()
         // MARK: - Code Signing Section
         let signing = NarrativeSection(
             title: "Code Signing",
@@ -501,7 +593,7 @@ struct NarrativeBuilder {
         return EngineNarrative(
             title: title,
             trustClassification: trust,
-            sections: [identity, signing, provenance, runtimeConstraints],
+            sections: [identity, lineage, signing, provenance, runtimeConstraints],
             summary: buildSummary(from: snapshot),
             globalLimits: globalLimits
         )

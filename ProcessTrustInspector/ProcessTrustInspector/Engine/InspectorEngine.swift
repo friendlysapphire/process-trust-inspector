@@ -84,10 +84,28 @@ final class InspectorEngine {
         }
         self.selectedSnapshot = snapshot
         self.selectedPID = pid
-        self.selectedNarrative = narrativeBuilder.build(from: snapshot)
+        self.selectedNarrative = narrativeBuilder.build(from: snapshot,
+                                                        getParentSnapshotInfo(childSnapshot: snapshot))
     }
 
-    
+    /// takes a process snapshot and returns ParentProcessInfo enum modeling
+    /// info about its parent process
+    func getParentSnapshotInfo(childSnapshot: ProcessSnapshot) -> ParentProcessInfo {
+       
+        // validate the snapshot contains a parent pid, if not all we know is it's unavailable for
+        // some unspecified reason.
+        guard let pPid = childSnapshot.parentPid else {
+            return ParentProcessInfo.noParentPID(reason: "Parent PID unavailable (not provided by inspection source).")
+        }
+ 
+        guard let parentSnapshot = self.processes.first(where: { $0.pid == pPid} ) else {
+            return ParentProcessInfo.parentNotVisible(pid: pPid, reason: "Parent process not visible via NSWorkspace-based enumeration.")
+        }
+       
+        return ParentProcessInfo.parentAvailable(parent: parentSnapshot)
+    }
+
+
     /// Clears the current selection and associated detail output.
     ///
     /// After calling this, the UI should return to the “Select a process to inspect” state.
