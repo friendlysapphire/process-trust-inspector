@@ -142,7 +142,7 @@ struct NarrativeBuilder {
             // If quarantine is present, Gatekeeper relevance is straightforward.
             switch snapshot.quarantineStatus {
             case .present:
-                return ("Gatekeeper evaluation likely (quarantine metadata present)", nil)
+                return ("    Likely evaluated at first launch", nil)
             case .unknown(let reason):
                 return (nil, reason)
             case .absent:
@@ -154,9 +154,9 @@ struct NarrativeBuilder {
             case .unknown(let reason):
                 return (nil, reason)
             case .bare:
-                return ("Gatekeeper evaluation unlikely (not an app bundle)", nil)
+                return ("    Evaluation unlikely (not an app bundle)", nil)
             case .bundled:
-                return ("Gatekeeper evaluation possible (app bundle; no quarantine metadata observed)", nil)
+                return ("    Evaluation possible at first launch", nil)
             }
         }
         
@@ -253,7 +253,8 @@ struct NarrativeBuilder {
                 lines.append("\(iconObserved(value: q.value, unknownReason: q.unknownReason)) Quarantine metadata")
 
                 if snapshot.trustLevel == .apple {
-                    lines.append("❓ Gatekeeper checks (typically not applicable to system components)")
+                    lines.append("❓ Gatekeeper checks")
+                    lines.append("    Not typically subject to Gatekeeper")
                 } else {
                     // Always two-line pattern: header line + smaller supporting line.
                     lines.append("\(iconInferred(unknownReason: gk.unknownReason)) Gatekeeper checks")
