@@ -39,19 +39,19 @@ import AppKit
 /// - No mutation of engine state.
 struct ProcessDetailView: View {
     let narrative: EngineNarrative
-
+    
     var body: some View {
         ScrollView {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 20) {
-
+                    
                     // Narrative summary (primary product)
                     if !narrative.summary.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Summary")
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
-
+                            
                             // Single Text node so drag-selection works naturally.
                             Text(styledSummaryText(from: narrative.summary))
                                 .font(.body)
@@ -60,16 +60,16 @@ struct ProcessDetailView: View {
                         .background(.thinMaterial)
                         .cornerRadius(10)
                     }
-
+                    
                     // Trust Classification (orientation, not verdict)
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Trust Classification")
                             .font(.footnote)
                             .foregroundColor(.secondary)
-
+                        
                         Text(narrative.trustClassification.label)
                             .font(.headline)
-
+                        
                         if !narrative.trustClassification.interpretation.isEmpty {
                             Text(narrative.trustClassification.interpretation.joined(separator: "\n"))
                                 .font(.body)
@@ -77,7 +77,7 @@ struct ProcessDetailView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.top, 2)
                         }
-
+                        
                         if !narrative.trustClassification.evidence.isEmpty {
                             DisclosureGroup("Evidence") {
                                 VStack(alignment: .leading, spacing: 8) {
@@ -89,7 +89,7 @@ struct ProcessDetailView: View {
                             }
                             .font(.subheadline)
                         }
-
+                        
                         if !narrative.trustClassification.limits.isEmpty {
                             VStack(alignment: .leading, spacing: 4) {
                                 ForEach(narrative.trustClassification.limits, id: \.text) { limit in
@@ -97,7 +97,7 @@ struct ProcessDetailView: View {
                                         Text("•")
                                             .font(.callout)
                                             .foregroundColor(.secondary)
-
+                                        
                                         Text(limit.text)
                                             .font(.callout)
                                             .foregroundColor(.secondary)
@@ -110,26 +110,26 @@ struct ProcessDetailView: View {
                     .padding(12)
                     .background(.thinMaterial)
                     .cornerRadius(10)
-
+                    
                     // Narrative sections
                     ForEach(narrative.sections) { section in
                         SectionCard(section: section)
                     }
-
+                    
                     // Global limits (always visible)
                     if !narrative.globalLimits.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Limits & Uncertainty")
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
-
+                            
                             VStack(alignment: .leading, spacing: 4) {
                                 ForEach(narrative.globalLimits, id: \.text) { limit in
                                     HStack(alignment: .top, spacing: 6) {
                                         Text("•")
                                             .font(.callout)
                                             .foregroundColor(.secondary)
-
+                                        
                                         Text(limit.text)
                                             .font(.callout)
                                             .foregroundColor(.secondary)
@@ -139,22 +139,22 @@ struct ProcessDetailView: View {
                         }
                         .padding(.top, 4)
                     }
-
+                    
                     Spacer(minLength: 0)
                 }
                 .padding(16)
                 .frame(maxWidth: 720, alignment: .leading)
                 .textSelection(.enabled)
-
+                
                 Spacer() // <-- key: makes ScrollView fill the pane, not just the 720pt column
             }
             .frame(maxWidth: .infinity, alignment: .leading) // optional but helps the layout
         }
         .navigationTitle(narrative.title)
     }
-
+    
     // MARK: - Summary styling (single Text node; no string changes)
-
+    
     private func styledSummaryText(from lines: [String]) -> AttributedString {
         // Exact header strings produced by NarrativeBuilder (no colons).
         let headerLines: Set<String> = [
@@ -162,27 +162,27 @@ struct ProcessDetailView: View {
             "Runtime constraints",
             "Provenance"
         ]
-
+        
         var result = AttributedString()
-
+        
         for (idx, rawLine) in lines.enumerated() {
             let isHeader = headerLines.contains(rawLine)
-
+            
             var line = AttributedString(rawLine)
             if isHeader {
                 line.font = .headline
             } else {
                 line.font = .body
             }
-
+            
             // Preserve your existing blank line separation.
             result.append(line)
-
+            
             if idx < lines.count - 1 {
                 result.append(AttributedString("\n\n"))
             }
         }
-
+        
         return result
     }
 }

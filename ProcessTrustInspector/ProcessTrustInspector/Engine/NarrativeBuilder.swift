@@ -259,7 +259,7 @@ struct NarrativeBuilder {
                     lines.append("\(iconInferred(unknownReason: gk.unknownReason)) Gatekeeper checks")
                     let eval = gk.value?.trimmingCharacters(in: .whitespacesAndNewlines)
                     if let eval, !eval.isEmpty {
-                        lines.append(eval)
+                        lines.append("      \(eval)")
                     }
                 }
             }
@@ -492,9 +492,9 @@ struct NarrativeBuilder {
             )
         }()
         // MARK: - Code Signing Section
-        let signing = NarrativeSection(
-            title: "Code Signing",
-            facts: [
+        let signing: NarrativeSection = {
+
+            var signingFacts: [FactLine] = [
                 FactLine(
                     label: "Trust category",
                     value: snapshot.signingSummary?.trustCategory.displayName,
@@ -502,6 +502,7 @@ struct NarrativeBuilder {
                         ? "Signing information unavailable (inspection limits)."
                         : nil
                 ),
+
                 FactLine(
                     label: "Signature status",
                     value: signatureStatusString(from: snapshot.signingSummary),
@@ -534,16 +535,76 @@ struct NarrativeBuilder {
                         unknownReason: e.unknownReason
                     )
                 }()
-            ],
-            interpretation: [
-                "Code signing provides a verifiable identity for the executable and supports integrity checks."
-            ],
-            limits: [
-                LimitNote(text: "A valid signature does not imply safety or benign behavior."),
-                LimitNote(text: "This describes the on-disk executable, not runtime memory state."),
-                LimitNote(text: "Entitlements describe declared capabilities in the code signature; they do not indicate whether permissions were granted.")
             ]
-        )
+
+            // MARK: - Consistency Observations (v1.1)
+
+            if let bundleID = snapshot.bundleIdentifier,
+               let signingID = snapshot.signingSummary?.identifier,
+               bundleID != signingID {
+
+                signingFacts.append(
+                    FactLine(
+                        label: "Consistency Note",
+                        value: "Bundle identifier differs from signing identifier",
+                        unknownReason: nil
+                    )
+                )
+            }
+
+            if snapshot.trustLevel == .apple {
+                switch snapshot.executableLocationClass {
+                case .systemOwned:
+                    break
+                default:
+                    signingFacts.append(
+                        FactLine(
+                            label: "Consistency",
+                            value: "Apple-signed executable located outside typical system-owned path",
+                            unknownReason: nil
+                        )
+                    )
+                }
+            }
+
+            if let summary = snapshot.signingSummary,
+               summary.status == 0,
+               summary.teamID == nil {
+
+                signingFacts.append(
+                    FactLine(
+                        label: "Consistency",
+                        value: "Valid signature but no Team ID present",
+                        unknownReason: nil
+                    )
+                )
+            }
+
+            if case .hasHardenedRuntime = snapshot.hasHardenedRuntime,
+               case .absent = snapshot.signingSummary?.entitlementsEvidence {
+
+                signingFacts.append(
+                    FactLine(
+                        label: "Consistency",
+                        value: "Hardened Runtime enabled but no entitlements declared",
+                        unknownReason: nil
+                    )
+                )
+            }
+
+            return NarrativeSection(
+                title: "Code Signing",
+                facts: signingFacts,
+                interpretation: [
+                    "Code signing provides a verifiable identity for the executable and supports integrity checks."
+                ],
+                limits: [
+                    LimitNote(text: "A valid signature does not imply safety or benign behavior."),
+                    LimitNote(text: "This describes the on-disk executable, not runtime memory state."),
+                    LimitNote(text: "Entitlements describe declared capabilities in the code signature; they do not indicate whether permissions were granted.")
+                ]
+            )
+        }()
 
         // MARK: - Provenance Section
         let provenance = NarrativeSection(
