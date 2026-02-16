@@ -159,6 +159,23 @@ struct NarrativeBuilder {
                 return ("Gatekeeper evaluation possible (app bundle; no quarantine metadata observed)", nil)
             }
         }
+        
+        func executableLocationDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
+            switch snapshot.executableLocationClass {
+            case .systemOwned:
+                return ("System-owned", nil)
+            case .applications:
+                return ("Applications", nil)
+            case .userWritable:
+                return ("User-writable", nil)
+            case .externalVolume:
+                return ("External volume", nil)
+            case .temporary:
+                return ("Temporary", nil)
+            case .unknown(let reason):
+                return (nil, reason)
+            }
+        }
 
         // MARK: - Narrative Summary (primary product)
         func buildSummary(from snapshot: ProcessSnapshot) -> [String] {
@@ -337,6 +354,14 @@ struct NarrativeBuilder {
                         ? "Executable path unavailable from NSWorkspace."
                         : nil
                 ),
+                {
+                    let loc = executableLocationDisplay(from: snapshot)
+                    return FactLine(
+                        label: "Executable location",
+                        value: loc.value,
+                        unknownReason: loc.unknownReason
+                    )
+                }(),
 
                 FactLine(
                     label: "Start time",
@@ -347,10 +372,12 @@ struct NarrativeBuilder {
                 )
             ],
             interpretation: [
-                "This section describes an identity snapshot of the selected running process."
+                "This section describes an identity snapshot of the selected running process.",
+                "Executable location summarizes where the on-disk binary resides, which can help contextualize origin and control."
             ],
             limits: [
                 LimitNote(text: "PIDs are ephemeral; refresh may invalidate this snapshot."),
+                LimitNote(text: "Executable location is a filesystem hint; it does not prove who installed the software or how it arrived."),
                 LimitNote(text: "Missing fields are normal and may reflect metadata absence, scope limits, or race conditions.")
             ]
         )

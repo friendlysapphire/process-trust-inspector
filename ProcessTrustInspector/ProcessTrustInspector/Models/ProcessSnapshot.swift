@@ -29,6 +29,19 @@ import Foundation
 import Security
 import AppKit
 
+/// Represents class of app based on where it lives on the filesystem.
+///
+/// This value is derived from the app's path.
+///
+enum ExecutableLocationClass {
+    case systemOwned
+    case applications
+    case userWritable
+    case externalVolume
+    case temporary
+    case unknown(reason: String)
+}
+
 /// Represents whether the process declares use of the App Sandbox.
 ///
 /// This value is derived from the presence of the
@@ -128,6 +141,55 @@ struct ProcessSnapshot {
     
     var trustLevel: TrustCategory {
         return signingSummary?.trustCategory ?? .unsigned
+    }
+    
+    var executableLocationClass: ExecutableLocationClass {
+        
+        // technically nil path and path w/ nil str might have different causes,  but
+        // I believe that's only theoretical.
+        guard let pathurl = executablePath, !pathurl.path.isEmpty else {
+            return .unknown(reason: "Executable path unavailable in this snapshot.")
+        }
+        
+        let systemOwnedPrefixes = ["/System/", "/usr/", "/bin/", "/sbin/", "/Library/Apple/"]
+        let applicationPrefixes = ["/Applications/", "/System/Applications/"]
+        let userWritablePrefixes = ["/Users/"]
+        let externalVolumePrefixes = ["/Volumes/"]
+        let temporaryPrefixes = ["/tmp/", "/var/tmp/", "/private/tmp/"]
+        
+        let path = pathurl.path
+        
+        if systemOwnedPrefixes.contains(where: { prefix in
+            return path.hasPrefix(prefix)
+        }) {
+            return ExecutableLocationClass.systemOwned
+        }
+        
+        if path.contains("/Applications/") || applicationPrefixes.contains(where: { prefix in
+            return path.hasPrefix(prefix) }
+        ) {
+            return ExecutableLocationClass.applications
+        }
+        
+        if userWritablePrefixes.contains(where: { prefix in
+            return path.hasPrefix(prefix) }
+        ) {
+            return ExecutableLocationClass.userWritable
+        }
+        
+        if externalVolumePrefixes.contains(where: { prefix in
+            return path.hasPrefix(prefix) }
+        ) {
+            return ExecutableLocationClass.externalVolume
+        }
+        
+        if temporaryPrefixes.contains(where: { prefix in
+            return path.hasPrefix(prefix) }
+        ) {
+            return ExecutableLocationClass.temporary
+        }
+        
+        return ExecutableLocationClass.unknown(reason: "Uncategorized executable path")
     }
     
 }
