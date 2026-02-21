@@ -172,9 +172,9 @@ struct NarrativeBuilder {
             case .unknown(let reason):
                 return (nil, reason)
             case .bare:
-                return ("    Evaluation unlikely (not an app bundle)", nil)
+                return ("    Gatekeeper evaluation unlikely (not an app bundle)", nil)
             case .bundled:
-                return ("    Evaluation possible at first launch", nil)
+                return ("    Gatekeeper evaluation possible at first launch", nil)
             }
         }
         

@@ -49,7 +49,7 @@ struct ProcessDetailView: View {
                     if !narrative.summary.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Summary")
-                                .font(.footnote)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                             
                             // Single Text node so drag-selection works naturally.
@@ -64,11 +64,15 @@ struct ProcessDetailView: View {
                     // Trust Classification (orientation, not verdict)
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Trust Classification")
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
+                            .font(.headline)
                         
                         Text(narrative.trustClassification.label)
                             .font(.headline)
+                            .fontWeight(.semibold)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 10)
+                            .background(.ultraThinMaterial)
+                            .cornerRadius(8)
                         
                         if !narrative.trustClassification.interpretation.isEmpty {
                             Text(narrative.trustClassification.interpretation.joined(separator: "\n"))
