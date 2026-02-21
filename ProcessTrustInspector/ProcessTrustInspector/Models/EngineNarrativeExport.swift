@@ -85,7 +85,100 @@ extension EngineNarrative {
 
         return out.joined(separator: "\n")
     }
+    
+    func asMarkdown() -> String {
+        var out: [String] = []
+
+        // Title
+        out.append("# \(title)")
+        out.append("")
+
+        // Summary
+        if !summary.isEmpty {
+            out.append("## Summary")
+            out.append("")
+            for line in summary {
+                out.append("- \(line)")
+            }
+            out.append("")
+        }
+
+        // Trust Classification
+        out.append("## Trust Classification")
+        out.append("")
+        out.append("**\(trustClassification.label)**")
+        out.append("")
+
+        if !trustClassification.interpretation.isEmpty {
+            for line in trustClassification.interpretation {
+                out.append(line)
+            }
+            out.append("")
+        }
+
+        if !trustClassification.evidence.isEmpty {
+            out.append("### Evidence")
+            out.append("")
+            for fact in trustClassification.evidence {
+                out.append("- \(fact.asMarkdownLine())")
+            }
+            out.append("")
+        }
+
+        if !trustClassification.limits.isEmpty {
+            out.append("### Limits")
+            out.append("")
+            for limit in trustClassification.limits {
+                out.append("- \(limit.text)")
+            }
+            out.append("")
+        }
+
+        // Sections
+        for section in sections {
+            out.append("## \(section.title)")
+            out.append("")
+
+            if !section.interpretation.isEmpty {
+                for line in section.interpretation {
+                    out.append(line)
+                }
+                out.append("")
+            }
+
+            if !section.facts.isEmpty {
+                for fact in section.facts {
+                    out.append("- \(fact.asMarkdownLine())")
+                }
+                out.append("")
+            }
+
+            if !section.limits.isEmpty {
+                out.append("### Limits")
+                out.append("")
+                for limit in section.limits {
+                    out.append("- \(limit.text)")
+                }
+                out.append("")
+            }
+        }
+
+        // Global limits
+        if !globalLimits.isEmpty {
+            out.append("## Limits & Uncertainty")
+            out.append("")
+            for limit in globalLimits {
+                out.append("- \(limit.text)")
+            }
+            out.append("")
+        }
+
+        while out.last == "" { _ = out.popLast() }
+
+        return out.joined(separator: "\n")
+    }
 }
+
 
 private extension FactLine {
     func asPlainTextLine() -> String {
@@ -98,5 +191,19 @@ private extension FactLine {
             return "\(label): Unknown (\(r))"
         }
         return "\(label): Unknown"
+    }
+}
+
+private extension FactLine {
+    func asMarkdownLine() -> String {
+        let v = (value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
+        if !v.isEmpty {
+            return "**\(label):** \(v)"
+        }
+        let r = (unknownReason?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
+        if !r.isEmpty {
+            return "**\(label):** Unknown (\(r))"
+        }
+        return "**\(label):** Unknown"
     }
 }

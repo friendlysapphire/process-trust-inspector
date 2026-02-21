@@ -26,6 +26,7 @@ import Foundation
 import Observation
 import AppKit
 import Darwin
+import UniformTypeIdentifiers
 
 /// High-level state coordinator for the Process & Trust Inspector.
 ///
@@ -154,6 +155,29 @@ final class InspectorEngine {
         let text = narrative.asPlainText()
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+    
+    @MainActor
+    func exportSelectedReportAsMarkdown() {
+        guard let narrative = selectedNarrative else { return }
+
+        
+        let panel = NSSavePanel()
+
+        if let mdType = UTType(filenameExtension: "md") {
+            panel.allowedContentTypes = [mdType]
+        }
+
+        panel.nameFieldStringValue = "process-report.md"
+        panel.canCreateDirectories = true
+
+        if panel.runModal() == .OK, let url = panel.url {
+            do {
+                try narrative.asMarkdown().write(to: url, atomically: true, encoding: .utf8)
+            } catch {
+                print("Failed to export markdown: \(error)")
+            }
+        }
     }
     
     /// Creates the engine and performs an initial refresh to populate the process list.

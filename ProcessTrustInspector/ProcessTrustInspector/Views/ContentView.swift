@@ -191,6 +191,15 @@ struct ContentView: View {
                     .help("Copy the full report for the selected process")
                     .disabled(engine.selectedNarrative == nil)
                 }
+                ToolbarItem {
+                    Button {
+                        engine.exportSelectedReportAsMarkdown()
+                    } label: {
+                        Label("Export Markdown", systemImage: "square.and.arrow.down")
+                    }
+                    .help("Export the full report as Markdown")
+                    .disabled(engine.selectedNarrative == nil)
+                }
             }
         } detail: {
             if let narrative = engine.selectedNarrative {
