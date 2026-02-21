@@ -91,14 +91,24 @@ struct ContentView: View {
 
         let trimmedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         let searched: [ProcessSnapshot]
+
         if trimmedQuery.isEmpty {
             searched = base
         } else {
             let q = trimmedQuery.lowercased()
+
             searched = base.filter { p in
                 let name = (p.name ?? "").lowercased()
                 let bundle = (p.bundleIdentifier ?? "").lowercased()
-                return name.contains(q) || bundle.contains(q)
+                let path = (p.executablePath?.path ?? "").lowercased()
+                let teamID = (p.signingSummary?.teamID ?? "").lowercased()
+                let signingID = (p.signingSummary?.identifier ?? "").lowercased()
+
+                return name.contains(q)
+                    || bundle.contains(q)
+                    || path.contains(q)
+                    || teamID.contains(q)
+                    || signingID.contains(q)
             }
         }
 
