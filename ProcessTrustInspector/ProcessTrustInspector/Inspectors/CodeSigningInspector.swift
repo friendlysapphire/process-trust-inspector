@@ -180,7 +180,7 @@ final class CodeSigningInspector {
     ///            any App Store policy OID evidence discovered.
     private func evaluateTrust(status: OSStatus, teamID: String?, identifier: String?, certificates: [SecCertificate]?, path: URL) -> (TrustCategory,OIDEvidence) {
         
-        if status != 0 { return (.unknown, OIDEvidence.unknown(reason: "Signagure check failed"))}
+        if status != 0 { return (.unknown, OIDEvidence.unknown(reason: "Signature check failed"))}
         
         if let team = teamID {
             // there's a team string, is it an apple team string?

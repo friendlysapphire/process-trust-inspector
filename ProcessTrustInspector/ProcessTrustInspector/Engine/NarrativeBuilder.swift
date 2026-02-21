@@ -61,6 +61,24 @@ struct NarrativeBuilder {
                 return "Failed (OSStatus \(summary.status))"
             }
         }
+        
+        func signatureFailureDetailFact(from summary: SigningSummary?) -> FactLine? {
+            guard let summary else { return nil }
+            guard summary.status != errSecSuccess else { return nil }
+
+            let explanation = SecurityStatusExplainer.explain(summary.status)
+
+            var detail = explanation.short
+            if let sys = explanation.systemMessage, !sys.isEmpty {
+                detail += " (\(sys))"
+            }
+
+            return FactLine(
+                label: "Signature failure detail",
+                value: detail,
+                unknownReason: nil
+            )
+        }
 
         func appStoreOIDEvidenceDisplay(from summary: SigningSummary?) -> (value: String?, unknownReason: String?) {
             guard let summary else {
@@ -272,42 +290,49 @@ struct NarrativeBuilder {
         let title = snapshot.name ?? "Process Details"
 
         // MARK: - Trust Classification (orientation)
+
+        var trustEvidence: [FactLine] = [
+            FactLine(
+                label: "Code signature",
+                value: signatureStatusString(from: snapshot.signingSummary),
+                unknownReason: snapshot.signingSummary == nil
+                    ? "Signing information unavailable (inspection limits)."
+                    : nil
+            ),
+
+            {
+                let oidDisplay = appStoreOIDEvidenceDisplay(from: snapshot.signingSummary)
+                return FactLine(
+                    label: "App Store certificate policy OID",
+                    value: oidDisplay.value,
+                    unknownReason: oidDisplay.unknownReason
+                )
+            }(),
+
+            FactLine(
+                label: "Team ID",
+                value: snapshot.signingSummary?.teamID,
+                unknownReason: snapshot.signingSummary == nil
+                    ? "Signing information unavailable (inspection limits)."
+                    : "No Team ID present in signature metadata."
+            ),
+
+            FactLine(
+                label: "Identifier",
+                value: snapshot.signingSummary?.identifier,
+                unknownReason: snapshot.signingSummary == nil
+                    ? "Signing information unavailable (inspection limits)."
+                    : "No signing identifier present."
+            )
+        ]
+
+        if let detail = signatureFailureDetailFact(from: snapshot.signingSummary) {
+            trustEvidence.append(detail)
+        }
+
         let trust = TrustClassificationBlock(
             label: snapshot.trustLevel.displayName,
-            evidence: [
-                FactLine(
-                    label: "Code signature",
-                    value: signatureStatusString(from: snapshot.signingSummary),
-                    unknownReason: snapshot.signingSummary == nil
-                        ? "Signing information unavailable (inspection limits)."
-                        : nil
-                ),
-
-                {
-                    let oidDisplay = appStoreOIDEvidenceDisplay(from: snapshot.signingSummary)
-                    return FactLine(
-                        label: "App Store certificate policy OID",
-                        value: oidDisplay.value,
-                        unknownReason: oidDisplay.unknownReason
-                    )
-                }(),
-
-                FactLine(
-                    label: "Team ID",
-                    value: snapshot.signingSummary?.teamID,
-                    unknownReason: snapshot.signingSummary == nil
-                        ? "Signing information unavailable (inspection limits)."
-                        : "No Team ID present in signature metadata."
-                ),
-
-                FactLine(
-                    label: "Identifier",
-                    value: snapshot.signingSummary?.identifier,
-                    unknownReason: snapshot.signingSummary == nil
-                        ? "Signing information unavailable (inspection limits)."
-                        : "No signing identifier present."
-                )
-            ],
+            evidence: trustEvidence,
             interpretation: [
                 "This classification is based on static code-signing identity of the on-disk executable (when available)."
             ],
@@ -537,7 +562,11 @@ struct NarrativeBuilder {
                     )
                 }()
             ]
-
+            
+            if let detail = signatureFailureDetailFact(from: snapshot.signingSummary) {
+                signingFacts.append(detail)
+            }
+            
             // MARK: - Consistency Observations (v1.1)
 
             if let bundleID = snapshot.bundleIdentifier,

@@ -79,15 +79,16 @@ struct ProcessDetailView: View {
                         }
                         
                         if !narrative.trustClassification.evidence.isEmpty {
-                            DisclosureGroup("Evidence") {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    ForEach(narrative.trustClassification.evidence) { fact in
-                                        FactRow(fact: fact)
-                                    }
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Evidence")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+
+                                ForEach(narrative.trustClassification.evidence) { fact in
+                                    FactRow(fact: fact)
                                 }
-                                .padding(.top, 8)
                             }
-                            .font(.subheadline)
+                            .padding(.top, 6)
                         }
                         
                         if !narrative.trustClassification.limits.isEmpty {
