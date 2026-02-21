@@ -180,6 +180,7 @@ struct ContentView: View {
                     } label: {
                         Label("Refresh", systemImage: "arrow.clockwise")
                     }
+                    .accessibilityLabel("Refresh process list")
                     .help("Refresh the process list")
                 }
                 ToolbarItem(placement: .automatic) {
@@ -188,7 +189,8 @@ struct ContentView: View {
                     } label: {
                         Label("Copy Report", systemImage: "doc.on.doc")
                     }
-                    .help("Copy the full report for the selected process")
+                    .accessibilityLabel("Copy full report to clipboard")
+                    .help("Copy the full report to clipboard")
                     .disabled(engine.selectedNarrative == nil)
                 }
                 ToolbarItem {
@@ -197,6 +199,7 @@ struct ContentView: View {
                     } label: {
                         Label("Export Markdown", systemImage: "square.and.arrow.down")
                     }
+                    .accessibilityLabel("Export full report")
                     .help("Export the full report as Markdown")
                     .disabled(engine.selectedNarrative == nil)
                 }
