@@ -148,6 +148,14 @@ final class InspectorEngine {
         self.runningAppCount = self.processes.count
     }
 
+    
+    func copySelectedReportToClipboard() {
+        guard let narrative = selectedNarrative else { return }
+        let text = narrative.asPlainText()
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+    
     /// Creates the engine and performs an initial refresh to populate the process list.
     init() {
         refresh()

@@ -182,6 +182,15 @@ struct ContentView: View {
                     }
                     .help("Refresh the process list")
                 }
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        engine.copySelectedReportToClipboard()
+                    } label: {
+                        Label("Copy Report", systemImage: "doc.on.doc")
+                    }
+                    .help("Copy the full report for the selected process")
+                    .disabled(engine.selectedNarrative == nil)
+                }
             }
         } detail: {
             if let narrative = engine.selectedNarrative {
