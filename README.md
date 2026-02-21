@@ -145,24 +145,6 @@ Command-line tools, daemons without LaunchServices registration, and certain low
 
 ---
 
-## Implementation note
-
-This project reflects a return to macOS development for the first time since the mid-1990s, well before macOS X and Swift.
-
-I used it as an opportunity to learn:
-- Swift
-- Modern macOS internals
-- Swift <-> C / Core Foundation boundaries
-- macOS code signing and trust mechanisms
-
-Adding SwiftUI expertise on top of that was outside my primary interest and too much to take on at once.
-
-All inspection logic, trust classification, signal evaluation, narrative construction, and system interaction code were designed and implemented by me.
-
-Most SwiftUI implementation code was produced with assistance from OpenAI and Gemini. The UI layout reflects my design decisions; I chose to use AI tools for SwiftUI implementation rather than invest cognitive energy into framework mechanics.
-
----
-
 ## License
 
 MIT License
