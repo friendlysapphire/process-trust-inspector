@@ -149,7 +149,7 @@ Explicitly excluded from v1:
 - Runtime injection or dylib analysis
 - XPC service relationships
 
-These exclusions are deliberate for v1 but may be revisited in the future. Many of these signals are noisy, privilege-sensitive, or easy to misinterpret without additional context.
+These exclusions are deliberate but may be revisited in the future. Many of these signals are noisy, privilege-sensitive, or easy to misinterpret without additional context.
 
 ### Process enumeration scope
 
