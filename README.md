@@ -127,13 +127,13 @@ Based on this evidence, the process is classified as **Apple Software**, even th
 
 The name indicates which application launched the helper, not who supplied the executable.
 
-This distinction is intentional in v1. Future versions may make this relationship more explicit in the UI.
+This distinction is intentional. Future versions may make this relationship more explicit in the UI.
 
 ---
 
 ## Scope and limitations (v1.x)
 
-Version 1 intentionally focuses on a stable, interpretable core.
+Version 1.x intentionally focuses on a stable, interpretable core.
 
 Included in v1.x:
 - Static code-signing identity
@@ -142,7 +142,7 @@ Included in v1.x:
 - Bundled vs bare executable context
 - Quarantine metadata and inferred Gatekeeper relevance
 
-Explicitly excluded from v1:
+Explicitly excluded from v1.x:
 - TCC permission state
 - Full entitlement enumeration
 - SIP / AMFI internals
