@@ -5,26 +5,29 @@
 
 macOS Process Trust Inspector is an explanation-oriented tool for understanding what a running process is, where it came from, and which trust and enforcement signals may apply, without turning those signals into conclusions.
 
-This tool is designed for engineers, security practitioners, and technically curious users who want clarity and context rather than malware scores.
+This tool is designed for engineers, security practitioners, and technically curious users who want clarity and context rather than risk scores.
 
 ---
 
 ## What this tool is
 
-macOS Process Trust Inspector provides a human-readable narrative explaining the identity and trust characteristics of running processes.
+macOS Process Trust Inspector provides a structured, human-readable narrative explaining the identity and trust characteristics of running processes.
 
 For a selected process, it explains:
 
 - **Identity**
-  - Process name, PID, user ID, parent process
+  - Process name, PID, user ID
+  - Parent → child trust comparison (lineage context)
   - Bundle identifier and executable path
+  - Executable location classification (system-owned, Applications, user-writable, etc.)
 - **Code signing**
   - Publisher identity (Apple / App Store / Developer ID / Unsigned)
   - Signature validity
   - Presence of entitlements
+  - Structural consistency notes (e.g. identifier mismatches, unexpected signing location)
 - **Provenance**
-  - Quarantine metadata
-  - When Gatekeeper checks are likely to apply
+  - Quarantine metadata (present / absent / unavailable)
+  - Gatekeeper applicability (contextual, not an assessment)
 - **Runtime constraints**
   - App Sandbox
   - Hardened Runtime
@@ -52,6 +55,17 @@ A valid code signature does not imply safety.
 An unsigned process does not imply malicious intent.
 
 The goal is visibility and understanding, not judgment.
+
+---
+
+## Recent additions (v1.1 – v1.2)
+
+- Process Lineage section with parent → child comparison of trust category, user ID, and privilege
+- Executable location classification
+- Identity consistency observations
+- Expanded search (name, bundle ID, path, Team ID, signing identifier)
+- Full narrative copy and Markdown export
+- Readable Security.framework OSStatus explanations
 
 ---
 
@@ -117,11 +131,11 @@ This distinction is intentional in v1. Future versions may make this relationshi
 
 ---
 
-## Scope and limitations (v1)
+## Scope and limitations (v1.x)
 
 Version 1 intentionally focuses on a stable, interpretable core.
 
-Included in v1:
+Included in v1.x:
 - Static code-signing identity
 - App Store certificate policy evidence
 - App Sandbox and Hardened Runtime (declared)
@@ -139,7 +153,7 @@ These exclusions are deliberate for v1 but may be revisited in the future. Many 
 
 ### Process enumeration scope
 
-Process listing in v1 is derived from NSWorkspace (LaunchServices). This includes user applications, background agents, and many helper processes, but it does not provide a complete view of all running processes on the system.
+Process listing in v1.x is derived from NSWorkspace (LaunchServices). This includes user applications, background agents, and many helper processes, but it does not provide a complete view of all running processes on the system.
 
 Command-line tools, daemons without LaunchServices registration, and certain low-level system processes may not appear in the list.
 
