@@ -354,7 +354,8 @@ struct NarrativeBuilder {
                         : nil
                 ),
                 FactLine(label: "PID", value: "\(snapshot.pid)"),
-                FactLine(label: "User ID", value: "\(snapshot.uid)"),
+                FactLine(label: "User ID",
+                         value: snapshot.uid.map { String($0) }),
                 FactLine(label: "Running as root", value: snapshot.runningAsRoot ? "Yes" : "No"),
                 FactLine(
                     label: "Bundle identifier",
@@ -458,11 +459,14 @@ struct NarrativeBuilder {
                         unknownReason: nil
                     )
                 )
+                
+                let parentUIDStr = parent.uid.map(String.init) ?? "unknown"
+                let childUIDStr  = snapshot.uid.map(String.init) ?? "unknown"
 
                 extraFacts.append(
                     FactLine(
                         label: "User ID",
-                        value: "\(parent.uid) -> \(snapshot.uid)",
+                        value: "\(parentUIDStr) -> \(childUIDStr)",
                         unknownReason: nil
                     )
                 )

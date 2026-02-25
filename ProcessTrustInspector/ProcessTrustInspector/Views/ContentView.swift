@@ -43,6 +43,7 @@ struct ContentView: View {
     @State private var engine = InspectorEngine()
     @State private var selectedCategory: TrustFilter = .all
     @State private var searchText: String = ""
+    @State private var showAllProcesses: Bool = false
 
     /// User-facing trust category filters for the process list.
     ///
@@ -171,6 +172,18 @@ struct ContentView: View {
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
                         }
+                        Spacer(minLength: 0)
+
+                        if !process.visibility.contains(.nsWorkspaceVis) {
+                            Text("libproc")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Capsule())
+                                .help("Not visible via NSWorkspace (non-GUI/background).")
+                        }
                     }
                     .tag(process.pid)
                 }
@@ -192,6 +205,28 @@ struct ContentView: View {
                     }
                     .accessibilityLabel("Refresh process list")
                     .help("Refresh the process list")
+                }
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        showAllProcesses.toggle()
+                        engine.showAllProcesses = showAllProcesses
+                        engine.refresh()
+
+                        // If the selected PID disappears under the new scope, clear selection.
+                        if let pid = engine.selectedPID,
+                           !engine.processes.contains(where: { $0.pid == pid }) {
+                            engine.clearSelection()
+                        }
+                    } label: {
+                        if showAllProcesses {
+                            Label("Show apps only", systemImage: "rectangle.stack.person.crop")
+                        } else {
+                            Label("Show all processes", systemImage: "square.stack.3d.up")
+                        }
+                    }
+                    .help(showAllProcesses
+                          ? "Limit list to processes visible via NSWorkspace."
+                          : "Include background and non-GUI processes (libproc).")
                 }
                 ToolbarItem(placement: .automatic) {
                     Button {
@@ -226,6 +261,7 @@ struct ContentView: View {
         }
         .onAppear {
             engine.refresh()
+            showAllProcesses = engine.showAllProcesses
 
             if let pid = engine.selectedPID,
                !visibleProcesses.contains(where: { $0.pid == pid }) {
@@ -250,6 +286,9 @@ struct ContentView: View {
                !visibleProcesses.contains(where: { $0.pid == pid }) {
                 engine.clearSelection()
             }
+        }
+        .onChange(of: engine.showAllProcesses) { _, _ in
+            engine.refresh()
         }
     }
 

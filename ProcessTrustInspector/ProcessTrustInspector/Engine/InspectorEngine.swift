@@ -45,6 +45,8 @@ final class InspectorEngine {
     
     /// Point-in-time list of running GUI applications.
     /// Derived from NSWorkspace and refreshed manually.
+    /// TODO: not really material for this app, but this would perform better
+    /// as a [pid_t : ProcessSnapshot] instead of an array.
     var processes: [ProcessSnapshot] = []
     
     /// Snapshot for the currently selected PID, if inspection succeeds.
@@ -55,7 +57,7 @@ final class InspectorEngine {
     var selectedPID: pid_t? = nil
     
     /// Diagnostic counters for UI/debug visibility.
-    var runningAppCount: Int = 0
+    var runningProcessCount: Int = 0
     var refreshCount: Int = 0
     var lastRefreshTime: Date? = nil
     
@@ -63,10 +65,18 @@ final class InspectorEngine {
     // this represents the primary output product of the tool
     var selectedNarrative: EngineNarrative? = nil
     
+    /// Controls whether BSD-only processes (not visible via NSWorkspace)
+    /// are included in the UI list.
+    var showAllProcesses: Bool = false
+    
     // MARK: - Inspectors
     
     /// Inspectors for looking into data structures
     private let processInspector = ProcessInspector()
+    
+    /// Helper responsible for extracting static code-signing identity
+    /// and related security metadata from executable files.
+    private let signingInspector = CodeSigningInspector()
     
     // builds narrative structures for UI
     private let narrativeBuilder = NarrativeBuilder()
@@ -100,7 +110,7 @@ final class InspectorEngine {
         }
  
         guard let parentSnapshot = self.processes.first(where: { $0.pid == pPid} ) else {
-            return ParentProcessInfo.parentNotVisible(pid: pPid, reason: "Parent process not visible via NSWorkspace-based enumeration.")
+            return ParentProcessInfo.parentNotVisible(pid: pPid, reason: "Parent process not visible.")
         }
        
         return ParentProcessInfo.parentAvailable(parent: parentSnapshot)
@@ -117,28 +127,110 @@ final class InspectorEngine {
         self.selectedNarrative = nil
     }
     
-    /// Refreshes the point-in-time list of running applications visible to `NSWorkspace`.
-    ///
-    /// This is intentionally scoped to what LaunchServices/NSWorkspace exposes (mostly GUI apps,
-    /// agents, and helpers). It is not a complete view of all system processes.
-    ///
-    /// Refresh also updates diagnostic counters and clears the current selection
-    /// if the selected PID is no longer present.
+
     func refresh() {
         self.refreshCount += 1
         self.processes = []
         self.lastRefreshTime = Date()
         
-        let appList = NSWorkspace.shared.runningApplications
+        // this will represent the fully merged and enriched list of ProcessSnapshots we
+        // will expose to the UI as self.processes array.
+        var masterFinalPidDict: [pid_t : ProcessSnapshot] = [:]
         
-        for app in appList {
+        // for each element in the BSD dict, constuct a ProcessSnapshot and fill based on best values
+        // set self.processes to Array(bsdpiddict.values)
+        
+        let bsdPidDict = processInspector.getBSDSnapshots()
+        
+       // print("received \(bsdPidDict.count) bsd processes")
+        
+        let nsWorkspacePidDict = processInspector.getNSWorkspaceSnapshots()
+        
+       // print("received \(nsWorkspacePidDict.count) nsworkspace processes")
+        
+        // use the pids in bsdPidDict as the master w/ nsworkspace as the overlay
+        
+        for (pid, record) in bsdPidDict {
             
-            let newProcess = processInspector.getProcessSnapshot(from: app.processIdentifier)
+            //from bsd record
+            let snapPid: pid_t = record.pid
+            let snapUid: uid_t? = record.uid
+            let snapParentPid: pid_t? = record.parentPid
             
-            if let newProcess {
-                self.processes.append(newProcess)
+            // prefer bsd record
+            let snapStartTime: Date? = record.startTime ?? nsWorkspacePidDict[pid]?.startTime
+            let snapExecutablePath: URL? = record.pidPath ?? nsWorkspacePidDict[pid]?.executableURL
+            
+            // prefer nsworkspace record
+            let snapName: String? = nsWorkspacePidDict[pid]?.localizedName ?? record.shortName
+            
+            // from nsworkspace record
+            let snapBundleIdentifier: String? = nsWorkspacePidDict[pid]?.bundleIdentifier
+            let snapIcon: NSImage? = nsWorkspacePidDict[pid]?.icon
+            
+            // reach in and get parentpids name
+            
+            var snapParentPidName: String?
+            
+            if let parentPid = record.parentPid {
+                snapParentPidName = nsWorkspacePidDict[parentPid]?.localizedName ?? bsdPidDict[parentPid]?.shortName
             }
+            
+            // /merge
+            
+            // compute visibility
+            var snapVisibility: Visibility = [.procPidVis]
+            if nsWorkspacePidDict[pid] != nil {
+                snapVisibility.insert(.nsWorkspaceVis)
+            }
+            
+            // compute signingInfo, bundleStatus, QuarantineStatus
+            let snapSigningInfo: SigningSummary?
+            let snapBundledStatus: BundledStatus
+            let snapQuarantineStatus: QuarantineStatus
+            
+            if let snapExecutablePath {
+                
+                snapBundledStatus = snapExecutablePath.path.contains(".app/Contents/MacOS/") ? BundledStatus.bundled : BundledStatus.bare
+                
+                snapSigningInfo = self.signingInspector.getSigningSummary(path: snapExecutablePath)
+                snapQuarantineStatus = getQuarantineStatus(for: snapExecutablePath)
+                
+            } else {
+                
+                snapQuarantineStatus = .unknown(reason: "Could not determine process path to determine quarantine status")
+                snapSigningInfo = nil
+                snapBundledStatus = .unknown(reason: "Could not determine process path to determine bundle status")
+                
+            }
+            
+            let snapshot = ProcessSnapshot(pid: snapPid,
+                                           uid: snapUid,
+                                           parentPid: snapParentPid,
+                                           parentPidName: snapParentPidName,
+                                           name: snapName,
+                                           startTime: snapStartTime,
+                                           bundleIdentifier: snapBundleIdentifier,
+                                           executablePath: snapExecutablePath,
+                                           signingSummary: snapSigningInfo,
+                                           bundledStatus: snapBundledStatus,
+                                           quarantineStatus: snapQuarantineStatus,
+                                           icon: snapIcon,
+                                           visibility: snapVisibility)
+            
+            masterFinalPidDict[pid] = snapshot
         }
+        
+        // TODO: look for any PIDs in nsworkspacepisdict but not in bsdpidict and create processsnapshots for them
+        
+        let allSnapshots = Array(masterFinalPidDict.values)
+
+        if showAllProcesses {
+            self.processes = allSnapshots
+        } else {
+            self.processes = allSnapshots.filter { $0.visibility.contains(.nsWorkspaceVis) }
+        }
+        
         // if the current selected PID isn't in the newly regenerated process list (ie it has exited), clear
         if let selectedPID = self.selectedPID {
             if !self.processes.contains(where: { $0.pid == selectedPID }) {
@@ -146,9 +238,33 @@ final class InspectorEngine {
             }
         }
         
-        self.runningAppCount = self.processes.count
+        self.runningProcessCount = self.processes.count
+        //print("process struct contains \(self.runningProcessCount) processes")
     }
 
+    /// Determines whether quarantine metadata is present on an executable file.
+    ///
+    /// This inspects the presence of the `com.apple.quarantine` extended attribute.
+    /// Absence of this attribute does not imply local origin or safety; metadata
+    /// may be missing, stripped, or never applied depending on the execution path.
+    ///
+    /// - Parameter url: The executable file URL to inspect.
+    /// - Returns: A `QuarantineStatus` representing observed presence, absence,
+    ///            or an unknown/error condition.
+    private func getQuarantineStatus(for url: URL) -> QuarantineStatus {
+        
+        let pathstr = url.path
+    
+        let result = pathstr.withCString { cpath in
+            getxattr(cpath, "com.apple.quarantine", nil, 0, 0, 0)
+        }
+        
+        if result >= 0 { return .present }
+        
+        if errno == ENOATTR { return .absent }
+        
+        else { return .unknown(reason: "getxattr failed (errno \(errno))") }
+    }
     
     func copySelectedReportToClipboard() {
         guard let narrative = selectedNarrative else { return }

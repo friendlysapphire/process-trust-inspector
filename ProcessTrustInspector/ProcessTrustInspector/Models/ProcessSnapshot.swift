@@ -94,6 +94,17 @@ enum QuarantineStatus {
     case unknown(reason: String)
 }
 
+
+struct Visibility : OptionSet {
+    let rawValue: Int
+    
+    static let procPidVis = Visibility(rawValue: 1 << 0)
+    static let nsWorkspaceVis = Visibility(rawValue: 1 << 1)
+    
+    static let allLayers: Visibility = [.procPidVis, .nsWorkspaceVis]
+    
+}
+
 /// Immutable, point-in-time snapshot of a running process.
 ///
 /// `ProcessSnapshot` aggregates identity, signing, provenance,
@@ -103,7 +114,7 @@ enum QuarantineStatus {
 /// due to scope limits, missing metadata, or race conditions.
 struct ProcessSnapshot {
     let pid: pid_t
-    let uid: pid_t
+    let uid: uid_t?
     let parentPid: pid_t?
     let parentPidName: String?
     let name: String?
@@ -115,6 +126,7 @@ struct ProcessSnapshot {
     let quarantineStatus: QuarantineStatus
     
     let icon: NSImage?
+    let visibility: Visibility
     
     var runningAsRoot:Bool { return uid == 0 }
     
@@ -192,4 +204,53 @@ struct ProcessSnapshot {
         return ExecutableLocationClass.unknown(reason: "Uncategorized executable path")
     }
     
+}
+
+/// Low-level process information gathered via libproc / proc_pidinfo.
+/// This represents structural OS-level facts about a process.
+/// Used with NSWorkspaceRecord to stitch together ProcessSnapshot
+struct BSDRecord {
+    let pid: pid_t
+    let uid: uid_t?
+    let parentPid: pid_t?
+    
+    /// Process start time derived from pbi_start_tvsec / pbi_start_tvusec.
+    let startTime: Date?
+    
+    /// Path returned from proc_pidpath (if available).
+    let pidPath: URL?
+    
+    /// Short command name (e.g. pbi_comm).
+    let shortName: String?
+    
+    /// Longer name field if you choose to collect it (e.g. pbi_name).
+    let longName: String?
+    
+    // by definittion this is coming from BSD vis
+    let visibility: Visibility = [.procPidVis]
+}
+
+/// Higher-level application metadata gathered via NSWorkspace / LaunchServices.
+/// This represents user-facing app context rather than structural OS state.
+/// Used with BSDRecord to stitch together ProcessSnapshot
+struct NSWorkspaceRecord {
+    let pid: pid_t
+    
+    /// Bundle identifier if available.
+    let bundleIdentifier: String?
+    
+    /// Executable URL from NSRunningApplication.
+    let executableURL: URL?
+    
+    /// Localized display name from NSRunningApplication.
+    let localizedName: String?
+    
+    /// Application icon (if available).
+    let icon: NSImage?
+    
+    /// Launch date reported by NSRunningApplication.
+    let startTime: Date?
+    
+    // by defintion this is coming from NSWorkspace vis
+    let visibility: Visibility = [.nsWorkspaceVis]
 }
