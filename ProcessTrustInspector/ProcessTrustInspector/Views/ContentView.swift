@@ -43,7 +43,14 @@ struct ContentView: View {
     @State private var engine = InspectorEngine()
     @State private var selectedCategory: TrustFilter = .all
     @State private var searchText: String = ""
-    @State private var showAllProcesses: Bool = false
+
+    @State private var processScope: ProcessScope = .appsOnly
+
+    enum ProcessScope: String, CaseIterable, Identifiable {
+        case appsOnly = "Apps"
+        case all = "All"
+        var id: String { rawValue }
+    }
 
     /// User-facing trust category filters for the process list.
     ///
@@ -206,28 +213,18 @@ struct ContentView: View {
                     .accessibilityLabel("Refresh process list")
                     .help("Refresh the process list")
                 }
-                ToolbarItem(placement: .automatic) {
-                    Button {
-                        showAllProcesses.toggle()
-                        engine.showAllProcesses = showAllProcesses
-                        engine.refresh()
 
-                        // If the selected PID disappears under the new scope, clear selection.
-                        if let pid = engine.selectedPID,
-                           !engine.processes.contains(where: { $0.pid == pid }) {
-                            engine.clearSelection()
-                        }
-                    } label: {
-                        if showAllProcesses {
-                            Label("Show apps only", systemImage: "rectangle.stack.person.crop")
-                        } else {
-                            Label("Show all processes", systemImage: "square.stack.3d.up")
-                        }
+                ToolbarItem(placement: .automatic) {
+                    Picker("Scope", selection: $processScope) {
+                        Text("Apps").tag(ProcessScope.appsOnly)
+                        Text("All").tag(ProcessScope.all)
                     }
-                    .help(showAllProcesses
-                          ? "Limit list to processes visible via NSWorkspace."
-                          : "Include background and non-GUI processes (libproc).")
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .controlSize(.small)
+                    .help("Apps shows NSWorkspace processes. All includes libproc-only background processes.")
                 }
+
                 ToolbarItem(placement: .automatic) {
                     Button {
                         engine.copySelectedReportToClipboard()
@@ -261,7 +258,7 @@ struct ContentView: View {
         }
         .onAppear {
             engine.refresh()
-            showAllProcesses = engine.showAllProcesses
+            processScope = engine.showAllProcesses ? .all : .appsOnly
 
             if let pid = engine.selectedPID,
                !visibleProcesses.contains(where: { $0.pid == pid }) {
@@ -287,8 +284,14 @@ struct ContentView: View {
                 engine.clearSelection()
             }
         }
-        .onChange(of: engine.showAllProcesses) { _, _ in
+        .onChange(of: processScope) { _, newValue in
+            engine.showAllProcesses = (newValue == .all)
             engine.refresh()
+
+            if let pid = engine.selectedPID,
+               !visibleProcesses.contains(where: { $0.pid == pid }) {
+                engine.clearSelection()
+            }
         }
     }
 
