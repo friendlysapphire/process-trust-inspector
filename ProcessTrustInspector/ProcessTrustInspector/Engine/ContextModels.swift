@@ -1,12 +1,4 @@
 //
-//  ParentProcessInfo.swift
-//  ProcessTrustInspector
-//
-//  Created by Aaron Weiss on 2/15/26.
-//
-
-
-//
 //  ContextModels.swift
 //  ProcessTrustInspector
 //
@@ -31,6 +23,7 @@
 //  pipeline and the narrative layer.
 //
 import Foundation
+import Darwin
 
 /// Describes what is known about a process’s parent at the time of inspection.
 ///
@@ -41,8 +34,8 @@ import Foundation
 ///
 /// This distinction prevents silent assumptions and allows the narrative
 /// layer to explain lineage uncertainty explicitly.
-    enum ParentProcessInfo {
-        case noParentPID(reason: String?)
-        case parentNotVisible(pid: pid_t, reason: String?)
-        case parentAvailable(parent: ProcessSnapshot)
-    }
+enum ParentProcessInfo {
+    case noParentPID(reason: String?)
+    case parentNotVisible(pid: pid_t, reason: String?)
+    case parentAvailable(parent: ProcessSnapshot)
+}

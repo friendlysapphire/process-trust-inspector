@@ -378,7 +378,7 @@ struct NarrativeBuilder {
                     label: "Executable path",
                     value: snapshot.executablePath?.path,
                     unknownReason: snapshot.executablePath == nil
-                        ? "Executable path unavailable from NSWorkspace."
+                        ? "Executable path unavailable."
                         : nil
                 ),
                 {
@@ -430,7 +430,7 @@ struct NarrativeBuilder {
             case .parentNotVisible(let pid, _):
                 parentLine = FactLine(
                     label: "Parent process",
-                    value: "PID \(pid) (not listed by NSWorkspace)",
+                    value: "PID \(pid) (not visible in current scope",
                     unknownReason: nil
                 )
 
@@ -516,7 +516,7 @@ struct NarrativeBuilder {
                     "Selected characteristics are shown as parent → child for direct comparison."
                 ],
                 limits: [
-                    LimitNote(text: "The parent may not appear in the NSWorkspace process list."),
+                    LimitNote(text: "The parent may not be visible in the current process view."),
                     LimitNote(text: "Parent relationships are point-in-time and may change between refreshes.")
                 ]
             )

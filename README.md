@@ -58,14 +58,17 @@ The goal is visibility and understanding, not judgment.
 
 ---
 
-## Recent additions (v1.1 – v1.2)
+## Recent additions (v1.3)
 
-- Process Lineage section with parent → child comparison of trust category, user ID, and privilege
-- Executable location classification
-- Identity consistency observations
-- Expanded search (name, bundle ID, path, Team ID, signing identifier)
-- Full narrative copy and Markdown export
-- Readable Security.framework OSStatus explanations
+- Full process universe enumeration via **libproc (BSD layer)**, merged with NSWorkspace
+- Explicit visibility modeling:
+  - Visible via LaunchServices (NSWorkspace)
+  - Visible via libproc only
+- UI toggle between:
+  - Applications only (LaunchServices-visible)
+  - All processes (including background and non-GUI processes)
+- Improved parent process resolution based on the full PID universe
+- Clear labeling of partial or limited visibility
 
 ---
 
@@ -131,16 +134,18 @@ This distinction is intentional. Future versions may make this relationship more
 
 ---
 
-## Scope and limitations (v1.x)
+## Scope and limitations (v1.3)
 
 Version 1.x intentionally focuses on a stable, interpretable core.
 
 Included in v1.x:
+- Visibility classification (LaunchServices vs libproc)
 - Static code-signing identity
 - App Store certificate policy evidence
 - App Sandbox and Hardened Runtime (declared)
 - Bundled vs bare executable context
 - Quarantine metadata and inferred Gatekeeper relevance
+- Parent process relationship context
 
 Explicitly excluded from v1.x:
 - TCC permission state
@@ -153,9 +158,21 @@ These exclusions are deliberate but may be revisited in the future. Many of thes
 
 ### Process enumeration scope
 
-Process listing in v1.x is derived from NSWorkspace (LaunchServices). This includes user applications, background agents, and many helper processes, but it does not provide a complete view of all running processes on the system.
+Process listing in v1.3 is derived from two system layers:
 
-Command-line tools, daemons without LaunchServices registration, and certain low-level system processes may not appear in the list.
+- **libproc (BSD layer)** – the broad PID universe visible to the current user
+- **NSWorkspace (LaunchServices layer)** – application-level processes
+
+The engine merges both sources into a unified model.
+
+By default, the UI shows processes visible via LaunchServices (applications and many background agents). You may expand the scope to include all processes visible via libproc, including:
+
+- Background daemons
+- Command-line tools
+- Non-GUI processes
+- Low-level system processes (subject to privilege constraints)
+
+Visibility depends on user privileges and OS restrictions. Some processes may be partially observable.
 
 ---
 
