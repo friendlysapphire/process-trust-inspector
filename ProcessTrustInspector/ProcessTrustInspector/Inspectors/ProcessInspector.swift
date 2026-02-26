@@ -2,28 +2,35 @@
 //  ProcessInspector.swift
 //  ProcessTrustInspector
 //
-//  Core process inspection and identity aggregation.
+//  Low-level process data collection.
 //
-//  This file defines ProcessInspector, a low-level inspector responsible for
-//  producing point-in-time identity snapshots of running processes.
+//  This file defines `ProcessInspector`, which is responsible for
+//  gathering raw, point-in-time process metadata from multiple
+//  system layers.
 //
 //  Responsibilities:
-//  - Enumerate running applications via NSWorkspace.
-//  - Resolve executable paths and bundle context.
-//  - Retrieve BSD-level process metadata (UID, parent PID) via libproc.
-//  - Query code-signing identity and entitlements via CodeSigningInspector.
-//  - Detect quarantine metadata on executable files.
+//  - Enumerate application-layer processes via NSWorkspace
+//    (LaunchServices view of the world).
+//  - Enumerate the full PID universe via libproc (BSD/kernel view).
+//  - Extract basic identity fields (UID, parent PID, names,
+//    start time, executable path).
+//
+//  This type does NOT merge, interpret, or build final
+//  `ProcessSnapshot` objects. It returns layer-specific records
+//  (`BSDRecord`, `NSWorkspaceRecord`) which the engine later
+//  coalesces into a unified model.
 //
 //  Non-responsibilities:
 //  - No UI concerns.
 //  - No state management or caching.
-//  - No interpretation or trust narratives (handled elsewhere).
+//  - No trust evaluation or narrative construction.
+//  - No cross-layer merging logic.
 //
 //  Notes:
-//  - All OS queries are inherently racy: processes may exit or PIDs may be
-//    recycled between inspection steps.
-//  - This inspector intentionally operates on best-effort signals and may
-//    return partial data when system metadata is unavailable.
+//  - All OS queries are inherently racy: processes may exit,
+//    appear, or have PIDs recycled during inspection.
+//  - Data is best-effort and may be partial if system calls fail
+//    or access is restricted.
 //
 //  Created by Aaron Weiss on 2/1/26.
 //

@@ -2,25 +2,29 @@
 //  InspectorEngine.swift
 //  ProcessTrustInspector
 //
-// High-level State Coordinator for the Process & Trust Inspector.
+//  Orchestration + UI-facing state.
 //
-// Responsibilities:
-// - Maintain the source-of-truth for the UI (Selected PID, Snapshot, Metadata)
-// - Enumerate GUI applications (NSWorkspace) for the primary navigation list
-// - Orchestrate data collection by delegating to specialized inspectors
-//   (ProcessInspector, CodeSigningInspector)
-// - Transform raw process data into a human-readable narrative
+//  This file defines `InspectorEngine`, the layer that Views interact with.
+//  It owns selection state, drives refresh, and turns raw inspection records
+//  into the final `ProcessSnapshot` array the UI displays.
 //
-// Non-responsibilities:
-// - No direct kernel/syscall logic (delegated to ProcessInspector)
-// - No low-level code signing logic (delegated to CodeSigningInspector)
-// - No security verdicts or risk assessments
+//  Responsibilities:
+//  - Maintain UI state: process list, selection, refresh metadata.
+//  - Orchestrate data collection via `ProcessInspector`.
+//  - Merge BSD/libproc and NSWorkspace records into unified snapshots.
+//  - Compute derived fields (visibility, bundle status, signing summary,
+//    quarantine metadata).
+//  - Build the narrative for the selected process.
 //
-// Design notes:
-// - Acts as a "Controller" in the MVVM/Observable pattern
-// - Failure-tolerant: If an inspection fails, the engine transitions to an
-//   explanatory error state rather than crashing.
-
+//  Non-responsibilities:
+//  - No kernel enumeration logic (handled by `ProcessInspector`).
+//  - No low-level code signing parsing (handled by `CodeSigningInspector`).
+//  - No risk scoring or security verdicts.
+//
+//  Notes:
+//  - Everything is best-effort and point-in-time. Processes may exit during refresh.
+//  - Missing data is normal and should not be treated as suspicious.
+//
 
 import Foundation
 import Observation
@@ -28,25 +32,20 @@ import AppKit
 import Darwin
 import UniformTypeIdentifiers
 
-/// High-level state coordinator for the Process & Trust Inspector.
+/// UI-facing coordinator that merges raw inspection data into the models
+/// the Views render.
 ///
-/// `InspectorEngine` is the UI-facing source of truth. It owns:
-/// - The current process list (from `NSWorkspace`)
-/// - The current selection (PID + snapshot)
-/// - The current narrative output (the primary product shown in the detail view)
-///
-/// The engine does not perform low-level inspection itself. It orchestrates
-/// specialized inspectors and transforms their output into stable, explanatory
-/// models for the UI.
+/// `InspectorEngine` sits above the inspectors:
+/// - `ProcessInspector` provides layer-specific records (BSD + NSWorkspace).
+/// - The engine coalesces those records into final `ProcessSnapshot` objects.
+/// - The engine performs light enrichment (signing, quarantine, visibility).
+/// - The engine owns selection state and narrative output.
 @Observable
 final class InspectorEngine {
     
     // MARK: - Published engine state (observed by Views)
     
-    /// Point-in-time list of running GUI applications.
-    /// Derived from NSWorkspace and refreshed manually.
-    /// TODO: not really material for this app, but this would perform better
-    /// as a [pid_t : ProcessSnapshot] instead of an array.
+    /// Point-in-time array of running GUI applications.
     var processes: [ProcessSnapshot] = []
     
     /// Snapshot for the currently selected PID, if inspection succeeds.
@@ -127,7 +126,19 @@ final class InspectorEngine {
         self.selectedNarrative = nil
     }
     
-
+    /// Rebuilds the full process list from scratch.
+    ///
+    /// We pull two views of the world:
+    /// - BSD/libproc (the full PID universe)
+    /// - NSWorkspace (application-layer processes)
+    ///
+    /// BSD is treated as the master set of PIDs. For each PID, we merge in
+    /// richer app-level metadata when available (name, bundle ID, icon),
+    /// then compute derived signals (visibility, signing, bundle status,
+    /// quarantine, etc.) to construct a complete `ProcessSnapshot`.
+    ///
+    /// Finally, we apply the current scope (Apps vs All) and publish the
+    /// resulting array to the UI.
     func refresh() {
         self.refreshCount += 1
         self.processes = []
@@ -146,7 +157,7 @@ final class InspectorEngine {
         
         let nsWorkspacePidDict = processInspector.getNSWorkspaceSnapshots()
         
-       // print("received \(nsWorkspacePidDict.count) nsworkspace processes")
+        // print("received \(nsWorkspacePidDict.count) nsworkspace processes")
         
         // use the pids in bsdPidDict as the master w/ nsworkspace as the overlay
         
