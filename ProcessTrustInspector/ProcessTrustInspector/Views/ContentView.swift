@@ -222,7 +222,7 @@ struct ContentView: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .controlSize(.small)
-                    .help("Apps shows NSWorkspace processes. All includes libproc-only background processes.")
+                    .help("Apps shows processes macOS recognizes as applications. All includes background and system processes.")
                 }
 
                 ToolbarItem(placement: .automatic) {
