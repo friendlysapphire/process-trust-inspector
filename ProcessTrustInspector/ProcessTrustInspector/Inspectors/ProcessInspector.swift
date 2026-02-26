@@ -99,7 +99,7 @@ final class ProcessInspector {
             // returns bytes returned or -1 on erroe
             status = proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &bsdPidInfo, bsdPidInfoSize)
             
-            if status >= bsdPidInfoSize {
+            if status == bsdPidInfoSize {
                 parentPid = pid_t(bsdPidInfo.pbi_ppid)
                 processUid = bsdPidInfo.pbi_uid
                 bsdLongName = decodeFixedCString(bsdPidInfo.pbi_comm)
@@ -143,15 +143,15 @@ final class ProcessInspector {
     
     /// Calls into the OS for an array of PIDs representing all running processes
     /// (that the OS is willing to tell us about at least)
-    /// returns [pid_t] of that list with 0 pid entries filtered out.
+    /// returns [pid_t] of that list with pid == 0 entries filtered out.
     private func getMasterBSDPidArray() -> [pid_t] {
         
         let pid_tSize = Int32(MemoryLayout<pid_t>.size)
-          
+        
         // first call to proc_listpids, get the num bytes returned so we can call again
         // with an allocated buffer
         var numBytes = proc_listpids(UInt32(PROC_ALL_PIDS), 0, nil, 0)
-          
+        
         guard numBytes != 0 else {
             let currentErrno = errno
             let errorCString = strerror(currentErrno)
@@ -160,12 +160,12 @@ final class ProcessInspector {
             }
             
             return []
-          }
-          
+        }
+        
         // allocate a buffer to receive the pid list
         let numPids = numBytes / pid_tSize
         var pidArray = [pid_t](repeating: 0, count: Int(numPids))
-          
+        
         // second call into proc_listpids with the newly mallocd buffer, fills pidArray
         numBytes = proc_listpids(UInt32(PROC_ALL_PIDS), 0, &pidArray, numBytes)
         
@@ -173,54 +173,10 @@ final class ProcessInspector {
             //print("LISTPID error: proc_listpids returned 0 bytes")
             return []
         }
-          
-          // remove pid 0s
-         return pidArray.filter { pid in pid != 0 }
         
-    }
-    
-    /// Decode a fixed-size C char array field (imported from C as a tuple)
-    /// into a Swift `String`.
-    ///
-    /// Use this when reading string fields embedded in C structs,
-    /// like `proc_bsdinfo.pbi_comm` or `pbi_name`.
-    ///
-    /// Unlike `decodeCStringBuffer`, this is for struct fields with
-    /// a compile-time fixed size — not for `[CChar]` buffers
-    /// allocated and passed into a C function.
-    private func decodeFixedCString<T>(_ field: T) -> String? {
-        // Make a mutable copy so we can take a stable address for withUnsafeBytes.
-        var copy = field
-
-        return withUnsafeBytes(of: &copy) { rawBuffer -> String? in
-            // Treat it as bytes, find the first NUL terminator, then UTF-8 decode.
-            guard let nulIndex = rawBuffer.firstIndex(of: 0) else {
-                // No terminator found; treat as invalid/unknown rather than guessing.
-                return nil
-            }
-
-            let bytes = rawBuffer.prefix(upTo: nulIndex)
-            return String(decoding: bytes, as: UTF8.self)
-        }
-    }
-
-    /// Decode a null-terminated C string stored in a mutable `[CChar]` buffer
-    /// (e.g. filled by `proc_pidpath`) into a Swift `String`.
-    ///
-    /// Use this when you’ve called a C API that writes into a buffer you allocated
-    /// and you need to convert that buffer to a Swift string.
-    ///
-    /// Unlike `decodeFixedCString`, this is for dynamic buffers like `[CChar]`,
-    /// not fixed-size struct fields imported as tuples.
-    private func decodeCStringBuffer(_ buffer: [CChar]) -> String? {
-        guard let nullIndex = buffer.firstIndex(of: 0) else {
-            return nil // no null terminator found
-        }
-
-        let slice = buffer[..<nullIndex]
-        let bytes = slice.map { UInt8(bitPattern: $0) }
-
-        return String(decoding: bytes, as: UTF8.self)
+        // remove pid 0s
+        return pidArray.filter { pid in pid != 0 }
+        
     }
     
 }

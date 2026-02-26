@@ -706,7 +706,7 @@ struct NarrativeBuilder {
 
         // MARK: - Global Limits & Uncertainty
         let globalLimits: [LimitNote] = [
-            LimitNote(text: "Scope: This tool enumerates running applications visible to NSWorkspace (via LaunchServices). This includes user applications, background agents, and some helper processes, but does not represent a complete view of all running system processes."),
+            LimitNote(text: "Scope: This tool can show either application-level processes (as recognized by macOS) or the full process list. Some background and system processes may still have limited metadata depending on privileges and system constraints."),
             LimitNote(text: "This is a point-in-time snapshot; processes may exit or change between refreshes."),
             LimitNote(text: "Unknown fields are expected and should be interpreted as unavailable, not suspicious.")
         ]

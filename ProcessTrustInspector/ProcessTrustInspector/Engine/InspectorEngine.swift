@@ -144,7 +144,7 @@ final class InspectorEngine {
         self.processes = []
         self.lastRefreshTime = Date()
         
-        // this will represent the fully merged and enriched list of ProcessSnapshots we
+        // this represents the fully merged and enriched list of ProcessSnapshots we
         // will expose to the UI as self.processes array.
         var masterFinalPidDict: [pid_t : ProcessSnapshot] = [:]
         
@@ -232,7 +232,68 @@ final class InspectorEngine {
             masterFinalPidDict[pid] = snapshot
         }
         
-        // TODO: look for any PIDs in nsworkspacepisdict but not in bsdpidict and create processsnapshots for them
+        // look for any processes in the nsWorkspacedict that haven't been added to masterFinalPidDict and include them
+        // functionally this currently means any processes that were in ns but not in bsd
+        // should only happen in very unlikely race situations (i think)
+        
+        for (pid, record) in nsWorkspacePidDict {
+            
+            if masterFinalPidDict[pid] == nil {
+    
+                let snapPid: pid_t = record.pid
+                let snapStartTime: Date? = record.startTime
+                let snapExecutablePath: URL? = record.executableURL
+                let snapName: String? = record.localizedName
+                let snapBundleIdentifier: String? = record.bundleIdentifier
+                let snapIcon: NSImage? = record.icon
+                let snapVisibility: Visibility = [.nsWorkspaceVis]
+                
+                // compute signingInfo, bundleStatus, QuarantineStatus
+                let snapSigningInfo: SigningSummary?
+                let snapBundledStatus: BundledStatus
+                let snapQuarantineStatus: QuarantineStatus
+                
+                if let snapExecutablePath {
+                    
+                    snapBundledStatus = snapExecutablePath.path.contains(".app/Contents/MacOS/") ? BundledStatus.bundled : BundledStatus.bare
+                    
+                    snapSigningInfo = self.signingInspector.getSigningSummary(path: snapExecutablePath)
+                    snapQuarantineStatus = getQuarantineStatus(for: snapExecutablePath)
+                    
+                } else {
+                    
+                    snapQuarantineStatus = .unknown(reason: "Could not determine process path to determine quarantine status")
+                    snapSigningInfo = nil
+                    snapBundledStatus = .unknown(reason: "Could not determine process path to determine bundle status")
+    
+                }
+                
+                let snapshot = ProcessSnapshot(pid: snapPid,
+                                               uid: nil,
+                                               parentPid: nil,
+                                               parentPidName: nil,
+                                               name: snapName,
+                                               startTime: snapStartTime,
+                                               bundleIdentifier: snapBundleIdentifier,
+                                               executablePath: snapExecutablePath,
+                                               signingSummary: snapSigningInfo,
+                                               bundledStatus: snapBundledStatus,
+                                               quarantineStatus: snapQuarantineStatus,
+                                               icon: snapIcon,
+                                               visibility: snapVisibility)
+                
+                masterFinalPidDict[pid] = snapshot
+            } // if bsdPidDict[pid] == nil
+                
+        } // iterating nsWorkspacePidDict for stragglers
+        
+        
+        // if the current selected PID isn't in the newly regenerated process list (ie it has exited), clear
+        if let selectedPID = self.selectedPID {
+            if masterFinalPidDict[selectedPID] == nil {
+                self.clearSelection()
+            }
+        }
         
         let allSnapshots = Array(masterFinalPidDict.values)
 
@@ -240,13 +301,6 @@ final class InspectorEngine {
             self.processes = allSnapshots
         } else {
             self.processes = allSnapshots.filter { $0.visibility.contains(.nsWorkspaceVis) }
-        }
-        
-        // if the current selected PID isn't in the newly regenerated process list (ie it has exited), clear
-        if let selectedPID = self.selectedPID {
-            if !self.processes.contains(where: { $0.pid == selectedPID }) {
-                self.clearSelection()
-            }
         }
         
         self.runningProcessCount = self.processes.count
