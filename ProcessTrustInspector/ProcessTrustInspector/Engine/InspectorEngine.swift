@@ -319,16 +319,46 @@ final class InspectorEngine {
     private func getQuarantineStatus(for url: URL) -> QuarantineStatus {
         
         let pathstr = url.path
-    
-        let result = pathstr.withCString { cpath in
+        var err: Int32
+        
+        // pass 1 for size and errors
+        let size: Int = pathstr.withCString { cpath in
             getxattr(cpath, "com.apple.quarantine", nil, 0, 0, 0)
         }
+
+        if size == -1 {
+            err = errno
+            if err == ENOATTR { return .absent }
+            else { return .unknown(reason: "getxattr failed (errno \(err))") }
+        }
         
-        if result >= 0 { return .present }
+        // pass 2 for the struct
+        var data = Data(count: size)
+        var size2: Int = 0
         
-        if errno == ENOATTR { return .absent }
+        pathstr.withCString { cpath in
+            data.withUnsafeMutableBytes { buffer in
+            size2 = getxattr(cpath, "com.apple.quarantine", buffer.baseAddress, size, 0, 0)
+            }
+        }
         
-        else { return .unknown(reason: "getxattr failed (errno \(errno))") }
+        if size2 == -1 {
+            err = errno
+            return .unknown(reason: "getxattr failed (errno \(err))")
+        }
+        
+        let slice = data.prefix(size2)
+        let qDetails = String(data: slice, encoding: .utf8)
+        
+        // TODO: if quarantine data is present, we now have the quarantine string
+        // as qDetails. This should be a ; delmited sting from which we can extact
+        // quarantine info. Right now we are now parsing and surfacing any of it,
+        // but the plumbing is here for when we want to.
+        // (add it to the .present enum as a String or parse the Sting and add it to the
+        // ennum as a struct w/ explicit fields. 
+        
+        return.present
+
     }
     
     func copySelectedReportToClipboard() {
