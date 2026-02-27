@@ -6,13 +6,9 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
 		D9204D8F2F12C135003A22BA /* ProcessTrustInspector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProcessTrustInspector.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D933E3B92F50B7500087C3A1 /* CStringDecoders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CStringDecoders.swift; sourceTree = "<group>"; };
-		D93B009D2F426708008D6844 /* ContextModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextModels.swift; sourceTree = "<group>"; };
 		D95F48732F36966800BD7E5F /* NarrativeBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrativeBuilder.swift; sourceTree = "<group>"; };
 		D978689A2F5213CF00E581A2 /* ProcessInspectorRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessInspectorRecords.swift; sourceTree = "<group>"; };
 		D978689B2F5213CF00E581A2 /* QuarantineInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuarantineInspector.swift; sourceTree = "<group>"; };
@@ -107,7 +103,6 @@
 			isa = PBXGroup;
 			children = (
 				D978689E2F5213DD00E581A2 /* InspectorEngine+Export.swift */,
-				D93B009D2F426708008D6844 /* ContextModels.swift */,
 				D95F48732F36966800BD7E5F /* NarrativeBuilder.swift */,
 				D9F819B62F2E984700AD18BA /* InspectorEngine.swift */,
 			);
