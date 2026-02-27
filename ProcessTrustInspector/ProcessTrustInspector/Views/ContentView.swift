@@ -128,6 +128,14 @@ struct ContentView: View {
         }
     }
 
+    /// Clears the detail pane if current filters/search remove the selected process.
+    private func clearSelectionIfHidden() {
+        guard let pid = engine.selectedPID else { return }
+        if !visibleProcesses.contains(where: { $0.pid == pid }) {
+            engine.clearSelection()
+        }
+    }
+
     var body: some View {
         NavigationSplitView {
             VStack(spacing: 0) {
@@ -202,11 +210,7 @@ struct ContentView: View {
                 ToolbarItem(placement: .automatic) {
                     Button {
                         engine.refresh()
-
-                        if let pid = engine.selectedPID,
-                           !visibleProcesses.contains(where: { $0.pid == pid }) {
-                            engine.clearSelection()
-                        }
+                        clearSelectionIfHidden()
                     } label: {
                         Label("Refresh", systemImage: "arrow.clockwise")
                     }
@@ -259,11 +263,7 @@ struct ContentView: View {
         .onAppear {
             engine.refresh()
             processScope = engine.showAllProcesses ? .all : .appsOnly
-
-            if let pid = engine.selectedPID,
-               !visibleProcesses.contains(where: { $0.pid == pid }) {
-                engine.clearSelection()
-            }
+            clearSelectionIfHidden()
         }
         .onChange(of: engine.selectedPID) { _, newValue in
             if let pid = newValue {
@@ -273,25 +273,15 @@ struct ContentView: View {
             }
         }
         .onChange(of: selectedCategory) { _, _ in
-            if let pid = engine.selectedPID,
-               !visibleProcesses.contains(where: { $0.pid == pid }) {
-                engine.clearSelection()
-            }
+            clearSelectionIfHidden()
         }
         .onChange(of: searchText) { _, _ in
-            if let pid = engine.selectedPID,
-               !visibleProcesses.contains(where: { $0.pid == pid }) {
-                engine.clearSelection()
-            }
+            clearSelectionIfHidden()
         }
         .onChange(of: processScope) { _, newValue in
             engine.showAllProcesses = (newValue == .all)
             engine.refresh()
-
-            if let pid = engine.selectedPID,
-               !visibleProcesses.contains(where: { $0.pid == pid }) {
-                engine.clearSelection()
-            }
+            clearSelectionIfHidden()
         }
     }
 
