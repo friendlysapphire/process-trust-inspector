@@ -117,22 +117,34 @@ struct TrustClassificationBlock {
 struct NarrativeSection: Identifiable {
     let id = UUID()
 
+    var key: NarrativeSectionKey = .unknown
     var title: String
     var facts: [FactLine] = []
     var interpretation: [String] = []
     var limits: [LimitNote] = []
 
     init(
+        key: NarrativeSectionKey = .unknown,
         title: String,
         facts: [FactLine] = [],
         interpretation: [String] = [],
         limits: [LimitNote] = []
     ) {
+        self.key = key
         self.title = title
         self.facts = facts
         self.interpretation = interpretation
         self.limits = limits
     }
+}
+
+enum NarrativeSectionKey: String {
+    case identity
+    case processLineage
+    case codeSigning
+    case provenance
+    case runtimeConstraints
+    case unknown
 }
 
 // MARK: - Facts & Uncertainty
@@ -148,11 +160,13 @@ struct NarrativeSection: Identifiable {
 struct FactLine: Identifiable {
     let id = UUID()
 
+    var key: FactLineKey = .unknown
     var label: String
     var value: String?
     var unknownReason: String?
 
-    init(label: String, value: String?, unknownReason: String? = nil) {
+    init(key: FactLineKey = .unknown, label: String, value: String?, unknownReason: String? = nil) {
+        self.key = key
         self.label = label
         self.value = value
         self.unknownReason = unknownReason
@@ -173,6 +187,131 @@ struct FactLine: Identifiable {
     var isKnown: Bool {
         if let value { return !value.isEmpty }
         return false
+    }
+}
+
+enum FactLineKey: String {
+    case codeSignature
+    case appStoreCertificatePolicyOID
+    case teamID
+    case identifier
+    case signatureFailureDetail
+    case processName
+    case pid
+    case userID
+    case runningAsRoot
+    case bundleIdentifier
+    case bundledApplication
+    case executablePath
+    case executableLocation
+    case startTime
+    case parentProcess
+    case trustCategory
+    case relationshipObservation
+    case signatureStatus
+    case entitlements
+    case consistencyNote
+    case consistency
+    case runtimeAppSandbox
+    case runtimeHardenedRuntime
+    case provenanceQuarantineMetadata
+    case provenanceQuarantineAgent
+    case provenanceQuarantineFirstObserved
+    case provenanceQuarantineEventIdentifier
+    case provenanceGatekeeperApplicability
+    case unknown
+}
+
+enum NarrativeDisplayCopy {
+    static let provenanceDetailFactKeys: Set<FactLineKey> = [
+        .provenanceQuarantineAgent,
+        .provenanceQuarantineFirstObserved,
+        .provenanceQuarantineEventIdentifier
+    ]
+
+    static func sectionTitle(for key: NarrativeSectionKey, fallback: String) -> String {
+        switch key {
+        case .runtimeConstraints:
+            return "Runtime Constraints"
+        case .provenance:
+            return "Provenance"
+        default:
+            return fallback
+        }
+    }
+
+    static func factLabel(for key: FactLineKey, fallback: String) -> String {
+        switch key {
+        case .codeSignature:
+            return "Code signature"
+        case .appStoreCertificatePolicyOID:
+            return "App Store certificate policy OID"
+        case .teamID:
+            return "Team ID"
+        case .identifier:
+            return "Identifier"
+        case .signatureFailureDetail:
+            return "Signature failure detail"
+        case .processName:
+            return "Process name"
+        case .pid:
+            return "PID"
+        case .userID:
+            return "User ID"
+        case .runningAsRoot:
+            return "Running as root"
+        case .bundleIdentifier:
+            return "Bundle identifier"
+        case .bundledApplication:
+            return "Bundled application"
+        case .executablePath:
+            return "Executable path"
+        case .executableLocation:
+            return "Executable location"
+        case .startTime:
+            return "Start time"
+        case .parentProcess:
+            return "Parent process"
+        case .trustCategory:
+            return "Trust category"
+        case .relationshipObservation:
+            return "Relationship observation"
+        case .signatureStatus:
+            return "Signature status"
+        case .entitlements:
+            return "Entitlements"
+        case .consistencyNote:
+            return "Consistency Note"
+        case .consistency:
+            return "Consistency"
+        case .runtimeAppSandbox:
+            return "App Sandbox"
+        case .runtimeHardenedRuntime:
+            return "Hardened Runtime"
+        case .provenanceQuarantineMetadata:
+            return "Quarantine metadata"
+        case .provenanceQuarantineAgent:
+            return "Quarantine agent"
+        case .provenanceQuarantineFirstObserved:
+            return "First observed"
+        case .provenanceQuarantineEventIdentifier:
+            return "Event identifier"
+        case .provenanceGatekeeperApplicability:
+            return "Gatekeeper applicability"
+        default:
+            return fallback
+        }
+    }
+
+    static func runtimeExplanation(for key: FactLineKey) -> String? {
+        switch key {
+        case .runtimeAppSandbox:
+            return "A restricted execution environment that limits what the app can access unless explicitly allowed."
+        case .runtimeHardenedRuntime:
+            return "A code-signing mode that enables additional runtime protections and is commonly required for notarization."
+        default:
+            return nil
+        }
     }
 }
 

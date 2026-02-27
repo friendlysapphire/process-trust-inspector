@@ -22,18 +22,6 @@
 import SwiftUI
 import AppKit
 
-private enum LabelKeys {
-    static let provenanceTitle = "provenance"
-    static let quarantineMetadata = "quarantine metadata"
-    static let gatekeeperApplicability = "gatekeeper applicability"
-    static let gatekeeperRelevance = "gatekeeper relevance"
-    static let quarantineDetailLabels: Set<String> = [
-        "quarantine agent",
-        "first observed",
-        "event identifier"
-    ]
-}
-
 /// Renders the explanation-first narrative for a selected process.
 ///
 /// `ProcessDetailView` is a pure view over `EngineNarrative`.
@@ -188,22 +176,6 @@ struct ProcessDetailView: View {
 private struct SectionCard: View {
     let section: NarrativeSection
 
-    private var isRuntimeConstraintsSection: Bool {
-        let normalized = section.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if normalized == "runtime constraints" || normalized == "runtime constraint" || normalized == "runtime" {
-            return true
-        }
-        let labels = Set(section.facts.map { $0.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() })
-        return labels.contains("app sandbox") || labels.contains("hardened runtime")
-    }
-
-    private var isProvenanceSection: Bool {
-        let normalized = normalizedLabel(section.title)
-        if normalized == LabelKeys.provenanceTitle { return true }
-        let labels = Set(section.facts.map { normalizedLabel($0.label) })
-        return labels.contains(LabelKeys.quarantineMetadata) || labels.contains(LabelKeys.gatekeeperApplicability)
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(section.title)
@@ -218,9 +190,9 @@ private struct SectionCard: View {
                     .padding(.top, 2)
             }
 
-            if isRuntimeConstraintsSection {
+            if section.key == .runtimeConstraints {
                 RuntimeConstraintsBlock(facts: section.facts)
-            } else if isProvenanceSection {
+            } else if section.key == .provenance {
                 ProvenanceBlock(facts: section.facts)
             } else if !section.facts.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
@@ -260,7 +232,11 @@ private struct RuntimeConstraintsBlock: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(facts) { fact in
-                RuntimeConstraintRow(label: fact.label, status: status(from: fact))
+                RuntimeConstraintRow(
+                    key: fact.key,
+                    label: NarrativeDisplayCopy.factLabel(for: fact.key, fallback: fact.label),
+                    status: status(from: fact)
+                )
             }
         }
     }
@@ -286,21 +262,12 @@ private struct RuntimeConstraintsBlock: View {
 ///
 /// It also provides copy actions for user ergonomics.
 private struct RuntimeConstraintRow: View {
+    let key: FactLineKey
     let label: String
     let status: RuntimeConstraintStatus
 
     private var explanationText: String? {
-        let k = label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-
-        if k == "app sandbox" {
-            return "A restricted execution environment that limits what the app can access unless explicitly allowed."
-        }
-
-        if k == "hardened runtime" {
-            return "A code-signing mode that enables additional runtime protections and is commonly required for notarization."
-        }
-
-        return nil
+        NarrativeDisplayCopy.runtimeExplanation(for: key)
     }
     
     var body: some View {
@@ -410,18 +377,15 @@ private struct ProvenanceBlock: View {
     let facts: [FactLine]
 
     private var quarantineFact: FactLine? {
-        facts.first(where: { normalizedLabel($0.label) == LabelKeys.quarantineMetadata })
+        facts.first(where: { $0.key == .provenanceQuarantineMetadata })
     }
 
     private var gatekeeperFact: FactLine? {
-        facts.first(where: {
-            let k = normalizedLabel($0.label)
-            return k == LabelKeys.gatekeeperApplicability || k == LabelKeys.gatekeeperRelevance
-        })
+        facts.first(where: { $0.key == .provenanceGatekeeperApplicability })
     }
 
     private var quarantineDetailFacts: [FactLine] {
-        facts.filter { LabelKeys.quarantineDetailLabels.contains(normalizedLabel($0.label)) }
+        facts.filter { NarrativeDisplayCopy.provenanceDetailFactKeys.contains($0.key) }
     }
 
     private var remainingFacts: [FactLine] {
@@ -439,26 +403,30 @@ private struct ProvenanceBlock: View {
     }
 
     var body: some View {
+        let _ = debugAssertNoDroppedFacts()
         VStack(alignment: .leading, spacing: 8) {
 
             // Quarantine: observed metadata present/absent/unknown
             if let q = quarantineFact {
                 ProvenanceRow(
-                    label: "Quarantine metadata",
+                    label: NarrativeDisplayCopy.factLabel(for: q.key, fallback: q.label),
                     status: quarantineStatus(from: q)
                 )
             }
 
             // Group parsed quarantine fields under the main metadata row.
             ForEach(quarantineDetailFacts) { fact in
-                FactRow(fact: fact)
+                FactRow(
+                    fact: fact,
+                    labelOverride: NarrativeDisplayCopy.factLabel(for: fact.key, fallback: fact.label)
+                )
                     .padding(.leading, 28)
             }
 
             // Gatekeeper: not directly observed in v1; treat as inferred applicability unless unknown
             if let gk = gatekeeperFact {
                 ProvenanceRow(
-                    label: "Gatekeeper applicability",
+                    label: NarrativeDisplayCopy.factLabel(for: gk.key, fallback: gk.label),
                     status: gatekeeperStatus(from: gk)
                 )
             }
@@ -468,6 +436,20 @@ private struct ProvenanceBlock: View {
                 FactRow(fact: fact)
             }
         }
+    }
+
+    private func debugAssertNoDroppedFacts() {
+#if DEBUG
+        let allIDs = Set(facts.map(\.id))
+        let quarantineIDs = quarantineFact.map { Set([$0.id]) } ?? []
+        let detailIDs = Set(quarantineDetailFacts.map(\.id))
+        let gatekeeperIDs = gatekeeperFact.map { Set([$0.id]) } ?? []
+        let remainingIDs = Set(remainingFacts.map(\.id))
+        let consumed = quarantineIDs.union(detailIDs).union(gatekeeperIDs)
+
+        assert(consumed.intersection(remainingIDs).isEmpty, "ProvenanceBlock rendered a fact in both specialized and fallback paths.")
+        assert(consumed.union(remainingIDs) == allIDs, "ProvenanceBlock dropped one or more facts.")
+#endif
     }
 
     private func quarantineStatus(from fact: FactLine) -> ProvenanceStatus {
@@ -627,11 +609,21 @@ private struct ProvenanceRow: View {
 /// by surfacing unknown reasons directly in the UI.
 private struct FactRow: View {
     let fact: FactLine
+    let labelOverride: String?
+
+    init(fact: FactLine, labelOverride: String? = nil) {
+        self.fact = fact
+        self.labelOverride = labelOverride
+    }
+
+    private var displayLabel: String {
+        labelOverride ?? NarrativeDisplayCopy.factLabel(for: fact.key, fallback: fact.label)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .top, spacing: 10) {
-                Text(fact.label + ":")
+                Text(displayLabel + ":")
                     .foregroundColor(.secondary)
                     .frame(width: 170, alignment: .leading)
 
@@ -666,7 +658,7 @@ private struct FactRow: View {
             }
 
             Button("Copy Label + Value") {
-                copyToPasteboard("\(fact.label): \(copyValueText())")
+                copyToPasteboard("\(displayLabel): \(copyValueText())")
             }
 
             if let reason = fact.unknownReason, !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -734,9 +726,4 @@ private extension View {
 private func copyToPasteboard(_ text: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(text, forType: .string)
-}
-
-/// Shared label canonicalization for section/fact matching in this file.
-private func normalizedLabel(_ label: String) -> String {
-    label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 }

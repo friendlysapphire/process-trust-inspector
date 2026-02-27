@@ -74,6 +74,7 @@ struct NarrativeBuilder {
             }
 
             return FactLine(
+                key: .signatureFailureDetail,
                 label: "Signature failure detail",
                 value: detail,
                 unknownReason: nil
@@ -293,6 +294,7 @@ struct NarrativeBuilder {
 
         var trustEvidence: [FactLine] = [
             FactLine(
+                key: .codeSignature,
                 label: "Code signature",
                 value: signatureStatusString(from: snapshot.signingSummary),
                 unknownReason: snapshot.signingSummary == nil
@@ -303,6 +305,7 @@ struct NarrativeBuilder {
             {
                 let oidDisplay = appStoreOIDEvidenceDisplay(from: snapshot.signingSummary)
                 return FactLine(
+                    key: .appStoreCertificatePolicyOID,
                     label: "App Store certificate policy OID",
                     value: oidDisplay.value,
                     unknownReason: oidDisplay.unknownReason
@@ -310,6 +313,7 @@ struct NarrativeBuilder {
             }(),
 
             FactLine(
+                key: .teamID,
                 label: "Team ID",
                 value: snapshot.signingSummary?.teamID,
                 unknownReason: snapshot.signingSummary == nil
@@ -318,6 +322,7 @@ struct NarrativeBuilder {
             ),
 
             FactLine(
+                key: .identifier,
                 label: "Identifier",
                 value: snapshot.signingSummary?.identifier,
                 unknownReason: snapshot.signingSummary == nil
@@ -344,20 +349,23 @@ struct NarrativeBuilder {
 
         // MARK: - Identity Section
         let identity = NarrativeSection(
+            key: .identity,
             title: "Identity",
             facts: [
                 FactLine(
+                    key: .processName,
                     label: "Process name",
                     value: snapshot.name,
                     unknownReason: snapshot.name == nil
                         ? "Process name unavailable."
                         : nil
                 ),
-                FactLine(label: "PID", value: "\(snapshot.pid)"),
-                FactLine(label: "User ID",
+                FactLine(key: .pid, label: "PID", value: "\(snapshot.pid)"),
+                FactLine(key: .userID, label: "User ID",
                          value: snapshot.uid.map { String($0) }),
-                FactLine(label: "Running as root", value: snapshot.runningAsRoot ? "Yes" : "No"),
+                FactLine(key: .runningAsRoot, label: "Running as root", value: snapshot.runningAsRoot ? "Yes" : "No"),
                 FactLine(
+                    key: .bundleIdentifier,
                     label: "Bundle identifier",
                     value: snapshot.bundleIdentifier,
                     unknownReason: snapshot.bundleIdentifier == nil
@@ -368,6 +376,7 @@ struct NarrativeBuilder {
                 {
                     let b = bundledStatusDisplay(from: snapshot)
                     return FactLine(
+                        key: .bundledApplication,
                         label: "Bundled application",
                         value: b.value,
                         unknownReason: b.unknownReason
@@ -375,6 +384,7 @@ struct NarrativeBuilder {
                 }(),
 
                 FactLine(
+                    key: .executablePath,
                     label: "Executable path",
                     value: snapshot.executablePath?.path,
                     unknownReason: snapshot.executablePath == nil
@@ -384,6 +394,7 @@ struct NarrativeBuilder {
                 {
                     let loc = executableLocationDisplay(from: snapshot)
                     return FactLine(
+                        key: .executableLocation,
                         label: "Executable location",
                         value: loc.value,
                         unknownReason: loc.unknownReason
@@ -391,6 +402,7 @@ struct NarrativeBuilder {
                 }(),
 
                 FactLine(
+                    key: .startTime,
                     label: "Start time",
                     value: formatStartTime(snapshot.startTime),
                     unknownReason: snapshot.startTime == nil
@@ -422,6 +434,7 @@ struct NarrativeBuilder {
             switch parentInfo {
             case .noParentPID(let reason):
                 parentLine = FactLine(
+                    key: .parentProcess,
                     label: "Parent process",
                     value: nil,
                     unknownReason: reason ?? "Parent PID not present in the process snapshot."
@@ -429,6 +442,7 @@ struct NarrativeBuilder {
 
             case .parentNotVisible(let pid, _):
                 parentLine = FactLine(
+                    key: .parentProcess,
                     label: "Parent process",
                     value: "PID \(pid) (not visible in current scope)",
                     unknownReason: nil
@@ -437,6 +451,7 @@ struct NarrativeBuilder {
             case .parentAvailable(let parent):
                 let parentName = parent.name ?? "Unknown"
                 parentLine = FactLine(
+                    key: .parentProcess,
                     label: "Parent process",
                     value: "\(parentName) (PID \(parent.pid))",
                     unknownReason: nil
@@ -446,6 +461,7 @@ struct NarrativeBuilder {
                 let childTrust = snapshot.trustLevel.displayName
                 extraFacts.append(
                     FactLine(
+                        key: .trustCategory,
                         label: "Trust category",
                         value: "\(parentTrust) -> \(childTrust)",
                         unknownReason: nil
@@ -454,6 +470,7 @@ struct NarrativeBuilder {
 
                 extraFacts.append(
                     FactLine(
+                        key: .runningAsRoot,
                         label: "Running as root",
                         value: "\(yesNo(parent.runningAsRoot)) -> \(yesNo(snapshot.runningAsRoot))",
                         unknownReason: nil
@@ -465,6 +482,7 @@ struct NarrativeBuilder {
 
                 extraFacts.append(
                     FactLine(
+                        key: .userID,
                         label: "User ID",
                         value: "\(parentUIDStr) -> \(childUIDStr)",
                         unknownReason: nil
@@ -489,6 +507,7 @@ struct NarrativeBuilder {
                 if differences.isEmpty {
                     extraFacts.append(
                         FactLine(
+                            key: .relationshipObservation,
                             label: "Relationship observation",
                             value: "No significant differences observed",
                             unknownReason: nil
@@ -497,6 +516,7 @@ struct NarrativeBuilder {
                 } else {
                     extraFacts.append(
                         FactLine(
+                            key: .relationshipObservation,
                             label: "Relationship observation",
                             value: "Differences observed: " + differences.joined(separator: "; "),
                             unknownReason: nil
@@ -509,6 +529,7 @@ struct NarrativeBuilder {
             facts.append(contentsOf: extraFacts)
 
             return NarrativeSection(
+                key: .processLineage,
                 title: "Process Lineage",
                 facts: facts,
                 interpretation: [
@@ -526,6 +547,7 @@ struct NarrativeBuilder {
 
             var signingFacts: [FactLine] = [
                 FactLine(
+                    key: .trustCategory,
                     label: "Trust category",
                     value: snapshot.signingSummary?.trustCategory.displayName,
                     unknownReason: snapshot.signingSummary == nil
@@ -534,6 +556,7 @@ struct NarrativeBuilder {
                 ),
 
                 FactLine(
+                    key: .signatureStatus,
                     label: "Signature status",
                     value: signatureStatusString(from: snapshot.signingSummary),
                     unknownReason: snapshot.signingSummary == nil
@@ -542,6 +565,7 @@ struct NarrativeBuilder {
                 ),
 
                 FactLine(
+                    key: .teamID,
                     label: "Team ID",
                     value: snapshot.signingSummary?.teamID,
                     unknownReason: snapshot.signingSummary == nil
@@ -550,6 +574,7 @@ struct NarrativeBuilder {
                 ),
 
                 FactLine(
+                    key: .identifier,
                     label: "Identifier",
                     value: snapshot.signingSummary?.identifier,
                     unknownReason: snapshot.signingSummary == nil
@@ -560,6 +585,7 @@ struct NarrativeBuilder {
                 {
                     let e = entitlementsEvidenceDisplay(from: snapshot.signingSummary)
                     return FactLine(
+                        key: .entitlements,
                         label: "Entitlements",
                         value: e.value,
                         unknownReason: e.unknownReason
@@ -579,6 +605,7 @@ struct NarrativeBuilder {
 
                 signingFacts.append(
                     FactLine(
+                        key: .consistencyNote,
                         label: "Consistency Note",
                         value: "Bundle identifier differs from signing identifier",
                         unknownReason: nil
@@ -593,6 +620,7 @@ struct NarrativeBuilder {
                 default:
                     signingFacts.append(
                         FactLine(
+                            key: .consistency,
                             label: "Consistency",
                             value: "Apple-signed executable located outside typical system-owned path",
                             unknownReason: nil
@@ -607,6 +635,7 @@ struct NarrativeBuilder {
 
                 signingFacts.append(
                     FactLine(
+                        key: .consistency,
                         label: "Consistency",
                         value: "Valid signature but no Team ID present",
                         unknownReason: nil
@@ -619,6 +648,7 @@ struct NarrativeBuilder {
 
                 signingFacts.append(
                     FactLine(
+                        key: .consistency,
                         label: "Consistency",
                         value: "Hardened Runtime enabled but no entitlements declared",
                         unknownReason: nil
@@ -627,6 +657,7 @@ struct NarrativeBuilder {
             }
 
             return NarrativeSection(
+                key: .codeSigning,
                 title: "Code Signing",
                 facts: signingFacts,
                 interpretation: [
@@ -645,6 +676,7 @@ struct NarrativeBuilder {
             {
                 let q = quarantineStatusDisplay(from: snapshot)
                 return FactLine(
+                    key: .provenanceQuarantineMetadata,
                     label: "Quarantine metadata",
                     value: q.value,
                     unknownReason: q.unknownReason
@@ -656,6 +688,7 @@ struct NarrativeBuilder {
             if let agent = details.agentName, !agent.isEmpty {
                 provenanceFacts.append(
                     FactLine(
+                        key: .provenanceQuarantineAgent,
                         label: "Quarantine agent",
                         value: agent,
                         unknownReason: nil
@@ -666,6 +699,7 @@ struct NarrativeBuilder {
             if let timestamp = details.timestamp {
                 provenanceFacts.append(
                     FactLine(
+                        key: .provenanceQuarantineFirstObserved,
                         label: "First observed",
                         value: timestamp.formatted(date: .abbreviated, time: .shortened),
                         unknownReason: nil
@@ -676,6 +710,7 @@ struct NarrativeBuilder {
             if let id = details.eventIdentifier, !id.isEmpty {
                 provenanceFacts.append(
                     FactLine(
+                        key: .provenanceQuarantineEventIdentifier,
                         label: "Event identifier",
                         value: id,
                         unknownReason: nil
@@ -688,6 +723,7 @@ struct NarrativeBuilder {
             {
                 let gk = gatekeeperRelevanceDisplay(from: snapshot)
                 return FactLine(
+                    key: .provenanceGatekeeperApplicability,
                     label: "Gatekeeper applicability",
                     value: gk.value,
                     unknownReason: gk.unknownReason
@@ -697,6 +733,7 @@ struct NarrativeBuilder {
 
         // MARK: - Provenance Section
         let provenance = NarrativeSection(
+            key: .provenance,
             title: "Provenance",
             facts: provenanceFacts,
             interpretation: [
@@ -711,11 +748,13 @@ struct NarrativeBuilder {
 
         // MARK: - Runtime Constraints
         let runtimeConstraints = NarrativeSection(
+            key: .runtimeConstraints,
             title: "Runtime Constraints",
             facts: [
                 {
                     let sbox = appSandboxDisplay(from: snapshot)
                     return FactLine(
+                        key: .runtimeAppSandbox,
                         label: "App Sandbox",
                         value: sbox.value,
                         unknownReason: sbox.unknownReason
@@ -725,6 +764,7 @@ struct NarrativeBuilder {
                 {
                     let rt = hardenedRuntimeDisplay(from: snapshot)
                     return FactLine(
+                        key: .runtimeHardenedRuntime,
                         label: "Hardened Runtime",
                         value: rt.value,
                         unknownReason: rt.unknownReason
