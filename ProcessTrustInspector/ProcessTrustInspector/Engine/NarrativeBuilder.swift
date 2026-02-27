@@ -648,6 +648,7 @@ struct NarrativeBuilder {
             {
                 let q = quarantineStatusDisplay(from: snapshot)
                 return FactLine(
+                    key: .provenanceQuarantineMetadata,
                     label: "Quarantine metadata",
                     value: q.value,
                     unknownReason: q.unknownReason
@@ -659,6 +660,7 @@ struct NarrativeBuilder {
             if let agent = details.agentName, !agent.isEmpty {
                 provenanceFacts.append(
                     FactLine(
+                        key: .provenanceQuarantineAgent,
                         label: "Quarantine agent",
                         value: agent,
                         unknownReason: nil
@@ -669,6 +671,7 @@ struct NarrativeBuilder {
             if let timestamp = details.timestamp {
                 provenanceFacts.append(
                     FactLine(
+                        key: .provenanceQuarantineFirstObserved,
                         label: "First observed",
                         value: timestamp.formatted(date: .abbreviated, time: .shortened),
                         unknownReason: nil
@@ -679,6 +682,7 @@ struct NarrativeBuilder {
             if let id = details.eventIdentifier, !id.isEmpty {
                 provenanceFacts.append(
                     FactLine(
+                        key: .provenanceQuarantineEventIdentifier,
                         label: "Event identifier",
                         value: id,
                         unknownReason: nil
@@ -691,6 +695,7 @@ struct NarrativeBuilder {
             {
                 let gk = gatekeeperRelevanceDisplay(from: snapshot)
                 return FactLine(
+                    key: .provenanceGatekeeperApplicability,
                     label: "Gatekeeper applicability",
                     value: gk.value,
                     unknownReason: gk.unknownReason
@@ -721,6 +726,7 @@ struct NarrativeBuilder {
                 {
                     let sbox = appSandboxDisplay(from: snapshot)
                     return FactLine(
+                        key: .runtimeAppSandbox,
                         label: "App Sandbox",
                         value: sbox.value,
                         unknownReason: sbox.unknownReason
@@ -730,6 +736,7 @@ struct NarrativeBuilder {
                 {
                     let rt = hardenedRuntimeDisplay(from: snapshot)
                     return FactLine(
+                        key: .runtimeHardenedRuntime,
                         label: "Hardened Runtime",
                         value: rt.value,
                         unknownReason: rt.unknownReason

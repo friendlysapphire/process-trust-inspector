@@ -23,13 +23,14 @@ import SwiftUI
 import AppKit
 
 private enum LabelKeys {
-    static let quarantineMetadata = "quarantine metadata"
-    static let gatekeeperApplicability = "gatekeeper applicability"
-    static let gatekeeperRelevance = "gatekeeper relevance"
-    static let quarantineDetailLabels: Set<String> = [
-        "quarantine agent",
-        "first observed",
-        "event identifier"
+    static let runtimeKeys: Set<FactLineKey> = [
+        .runtimeAppSandbox,
+        .runtimeHardenedRuntime
+    ]
+    static let quarantineDetailKeys: Set<FactLineKey> = [
+        .provenanceQuarantineAgent,
+        .provenanceQuarantineFirstObserved,
+        .provenanceQuarantineEventIdentifier
     ]
 }
 
@@ -249,6 +250,18 @@ private struct RuntimeConstraintsBlock: View {
     }
 
     private func status(from fact: FactLine) -> RuntimeConstraintStatus {
+        if LabelKeys.runtimeKeys.contains(fact.key) {
+            if let value = fact.value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty {
+                if value.caseInsensitiveCompare("Yes") == .orderedSame { return .enabled }
+                if value.caseInsensitiveCompare("No") == .orderedSame { return .disabled }
+                return .unknown(reason: value)
+            }
+            if let reason = fact.unknownReason, !reason.isEmpty {
+                return .unknown(reason: reason)
+            }
+            return .unknown(reason: nil)
+        }
+
         if let value = fact.value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty {
             if value.caseInsensitiveCompare("Yes") == .orderedSame { return .enabled }
             if value.caseInsensitiveCompare("No") == .orderedSame { return .disabled }
@@ -393,18 +406,15 @@ private struct ProvenanceBlock: View {
     let facts: [FactLine]
 
     private var quarantineFact: FactLine? {
-        facts.first(where: { normalizedLabel($0.label) == LabelKeys.quarantineMetadata })
+        facts.first(where: { $0.key == .provenanceQuarantineMetadata })
     }
 
     private var gatekeeperFact: FactLine? {
-        facts.first(where: {
-            let k = normalizedLabel($0.label)
-            return k == LabelKeys.gatekeeperApplicability || k == LabelKeys.gatekeeperRelevance
-        })
+        facts.first(where: { $0.key == .provenanceGatekeeperApplicability })
     }
 
     private var quarantineDetailFacts: [FactLine] {
-        facts.filter { LabelKeys.quarantineDetailLabels.contains(normalizedLabel($0.label)) }
+        facts.filter { LabelKeys.quarantineDetailKeys.contains($0.key) }
     }
 
     private var remainingFacts: [FactLine] {
@@ -717,9 +727,4 @@ private extension View {
 private func copyToPasteboard(_ text: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(text, forType: .string)
-}
-
-/// Shared label canonicalization for section/fact matching in this file.
-private func normalizedLabel(_ label: String) -> String {
-    label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 }

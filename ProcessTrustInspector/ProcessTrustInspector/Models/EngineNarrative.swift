@@ -160,11 +160,13 @@ enum NarrativeSectionKey: String {
 struct FactLine: Identifiable {
     let id = UUID()
 
+    var key: FactLineKey = .unknown
     var label: String
     var value: String?
     var unknownReason: String?
 
-    init(label: String, value: String?, unknownReason: String? = nil) {
+    init(key: FactLineKey = .unknown, label: String, value: String?, unknownReason: String? = nil) {
+        self.key = key
         self.label = label
         self.value = value
         self.unknownReason = unknownReason
@@ -186,6 +188,17 @@ struct FactLine: Identifiable {
         if let value { return !value.isEmpty }
         return false
     }
+}
+
+enum FactLineKey: String {
+    case runtimeAppSandbox
+    case runtimeHardenedRuntime
+    case provenanceQuarantineMetadata
+    case provenanceQuarantineAgent
+    case provenanceQuarantineFirstObserved
+    case provenanceQuarantineEventIdentifier
+    case provenanceGatekeeperApplicability
+    case unknown
 }
 
 /// A non-alarmist statement describing uncertainty or scope limits.
