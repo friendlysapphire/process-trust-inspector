@@ -726,12 +726,13 @@ private struct LimitList: View {
     }
 }
 
-/// Shared pasteboard helper for row context menus in this file.
+/// Centralized clipboard helper used by context menus in this file.
 private func copyToPasteboard(_ text: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(text, forType: .string)
 }
 
+/// Shared label canonicalization for section/fact matching in this file.
 private func normalizedLabel(_ label: String) -> String {
     label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 }
