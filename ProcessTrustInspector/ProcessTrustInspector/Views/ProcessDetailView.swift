@@ -23,15 +23,52 @@ import SwiftUI
 import AppKit
 
 private enum LabelKeys {
-    static let runtimeKeys: Set<FactLineKey> = [
-        .runtimeAppSandbox,
-        .runtimeHardenedRuntime
-    ]
     static let quarantineDetailKeys: Set<FactLineKey> = [
         .provenanceQuarantineAgent,
         .provenanceQuarantineFirstObserved,
         .provenanceQuarantineEventIdentifier
     ]
+}
+
+private enum DetailCopy {
+    static func runtimeLabel(for fact: FactLine) -> String {
+        switch fact.key {
+        case .runtimeAppSandbox:
+            return "App Sandbox"
+        case .runtimeHardenedRuntime:
+            return "Hardened Runtime"
+        default:
+            return fact.label
+        }
+    }
+
+    static func runtimeExplanation(for key: FactLineKey) -> String? {
+        switch key {
+        case .runtimeAppSandbox:
+            return "A restricted execution environment that limits what the app can access unless explicitly allowed."
+        case .runtimeHardenedRuntime:
+            return "A code-signing mode that enables additional runtime protections and is commonly required for notarization."
+        default:
+            return nil
+        }
+    }
+
+    static func provenanceLabel(for fact: FactLine) -> String {
+        switch fact.key {
+        case .provenanceQuarantineMetadata:
+            return "Quarantine metadata"
+        case .provenanceQuarantineAgent:
+            return "Quarantine agent"
+        case .provenanceQuarantineFirstObserved:
+            return "First observed"
+        case .provenanceQuarantineEventIdentifier:
+            return "Event identifier"
+        case .provenanceGatekeeperApplicability:
+            return "Gatekeeper applicability"
+        default:
+            return fact.label
+        }
+    }
 }
 
 /// Renders the explanation-first narrative for a selected process.
@@ -244,24 +281,16 @@ private struct RuntimeConstraintsBlock: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(facts) { fact in
-                RuntimeConstraintRow(label: fact.label, status: status(from: fact))
+                RuntimeConstraintRow(
+                    key: fact.key,
+                    label: DetailCopy.runtimeLabel(for: fact),
+                    status: status(from: fact)
+                )
             }
         }
     }
 
     private func status(from fact: FactLine) -> RuntimeConstraintStatus {
-        if LabelKeys.runtimeKeys.contains(fact.key) {
-            if let value = fact.value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty {
-                if value.caseInsensitiveCompare("Yes") == .orderedSame { return .enabled }
-                if value.caseInsensitiveCompare("No") == .orderedSame { return .disabled }
-                return .unknown(reason: value)
-            }
-            if let reason = fact.unknownReason, !reason.isEmpty {
-                return .unknown(reason: reason)
-            }
-            return .unknown(reason: nil)
-        }
-
         if let value = fact.value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty {
             if value.caseInsensitiveCompare("Yes") == .orderedSame { return .enabled }
             if value.caseInsensitiveCompare("No") == .orderedSame { return .disabled }
@@ -282,21 +311,12 @@ private struct RuntimeConstraintsBlock: View {
 ///
 /// It also provides copy actions for user ergonomics.
 private struct RuntimeConstraintRow: View {
+    let key: FactLineKey
     let label: String
     let status: RuntimeConstraintStatus
 
     private var explanationText: String? {
-        let k = label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-
-        if k == "app sandbox" {
-            return "A restricted execution environment that limits what the app can access unless explicitly allowed."
-        }
-
-        if k == "hardened runtime" {
-            return "A code-signing mode that enables additional runtime protections and is commonly required for notarization."
-        }
-
-        return nil
+        DetailCopy.runtimeExplanation(for: key)
     }
     
     var body: some View {
@@ -437,21 +457,24 @@ private struct ProvenanceBlock: View {
             // Quarantine: observed metadata present/absent/unknown
             if let q = quarantineFact {
                 ProvenanceRow(
-                    label: "Quarantine metadata",
+                    label: DetailCopy.provenanceLabel(for: q),
                     status: quarantineStatus(from: q)
                 )
             }
 
             // Group parsed quarantine fields under the main metadata row.
             ForEach(quarantineDetailFacts) { fact in
-                FactRow(fact: fact)
+                FactRow(
+                    fact: fact,
+                    labelOverride: DetailCopy.provenanceLabel(for: fact)
+                )
                     .padding(.leading, 28)
             }
 
             // Gatekeeper: not directly observed in v1; treat as inferred applicability unless unknown
             if let gk = gatekeeperFact {
                 ProvenanceRow(
-                    label: "Gatekeeper applicability",
+                    label: DetailCopy.provenanceLabel(for: gk),
                     status: gatekeeperStatus(from: gk)
                 )
             }
@@ -620,11 +643,21 @@ private struct ProvenanceRow: View {
 /// by surfacing unknown reasons directly in the UI.
 private struct FactRow: View {
     let fact: FactLine
+    let labelOverride: String?
+
+    init(fact: FactLine, labelOverride: String? = nil) {
+        self.fact = fact
+        self.labelOverride = labelOverride
+    }
+
+    private var displayLabel: String {
+        labelOverride ?? fact.label
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .top, spacing: 10) {
-                Text(fact.label + ":")
+                Text(displayLabel + ":")
                     .foregroundColor(.secondary)
                     .frame(width: 170, alignment: .leading)
 
@@ -659,7 +692,7 @@ private struct FactRow: View {
             }
 
             Button("Copy Label + Value") {
-                copyToPasteboard("\(fact.label): \(copyValueText())")
+                copyToPasteboard("\(displayLabel): \(copyValueText())")
             }
 
             if let reason = fact.unknownReason, !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
