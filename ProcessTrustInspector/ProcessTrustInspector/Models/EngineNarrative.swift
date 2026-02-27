@@ -191,6 +191,27 @@ struct FactLine: Identifiable {
 }
 
 enum FactLineKey: String {
+    case codeSignature
+    case appStoreCertificatePolicyOID
+    case teamID
+    case identifier
+    case signatureFailureDetail
+    case processName
+    case pid
+    case userID
+    case runningAsRoot
+    case bundleIdentifier
+    case bundledApplication
+    case executablePath
+    case executableLocation
+    case startTime
+    case parentProcess
+    case trustCategory
+    case relationshipObservation
+    case signatureStatus
+    case entitlements
+    case consistencyNote
+    case consistency
     case runtimeAppSandbox
     case runtimeHardenedRuntime
     case provenanceQuarantineMetadata
@@ -221,6 +242,48 @@ enum NarrativeDisplayCopy {
 
     static func factLabel(for key: FactLineKey, fallback: String) -> String {
         switch key {
+        case .codeSignature:
+            return "Code signature"
+        case .appStoreCertificatePolicyOID:
+            return "App Store certificate policy OID"
+        case .teamID:
+            return "Team ID"
+        case .identifier:
+            return "Identifier"
+        case .signatureFailureDetail:
+            return "Signature failure detail"
+        case .processName:
+            return "Process name"
+        case .pid:
+            return "PID"
+        case .userID:
+            return "User ID"
+        case .runningAsRoot:
+            return "Running as root"
+        case .bundleIdentifier:
+            return "Bundle identifier"
+        case .bundledApplication:
+            return "Bundled application"
+        case .executablePath:
+            return "Executable path"
+        case .executableLocation:
+            return "Executable location"
+        case .startTime:
+            return "Start time"
+        case .parentProcess:
+            return "Parent process"
+        case .trustCategory:
+            return "Trust category"
+        case .relationshipObservation:
+            return "Relationship observation"
+        case .signatureStatus:
+            return "Signature status"
+        case .entitlements:
+            return "Entitlements"
+        case .consistencyNote:
+            return "Consistency Note"
+        case .consistency:
+            return "Consistency"
         case .runtimeAppSandbox:
             return "App Sandbox"
         case .runtimeHardenedRuntime:

@@ -617,7 +617,7 @@ private struct FactRow: View {
     }
 
     private var displayLabel: String {
-        labelOverride ?? fact.label
+        labelOverride ?? NarrativeDisplayCopy.factLabel(for: fact.key, fallback: fact.label)
     }
 
     var body: some View {
