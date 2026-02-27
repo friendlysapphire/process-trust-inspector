@@ -30,7 +30,6 @@ import Foundation
 import Observation
 import AppKit
 import Darwin
-import UniformTypeIdentifiers
 
 /// UI-facing coordinator that merges raw inspection data into the models
 /// the Views render.
@@ -76,6 +75,9 @@ final class InspectorEngine {
     /// Helper responsible for extracting static code-signing identity
     /// and related security metadata from executable files.
     private let signingInspector = CodeSigningInspector()
+
+    /// Helper responsible for inspecting quarantine metadata on executables.
+    private let quarantineInspector = QuarantineInspector()
 
     // builds narrative structures for UI
     private let narrativeBuilder = NarrativeBuilder()
@@ -205,7 +207,7 @@ final class InspectorEngine {
                 snapBundledStatus = snapExecutablePath.path.contains(".app/Contents/MacOS/") ? BundledStatus.bundled : BundledStatus.bare
                 
                 snapSigningInfo = self.signingInspector.getSigningSummary(path: snapExecutablePath)
-                snapQuarantineStatus = getQuarantineStatus(for: snapExecutablePath)
+                snapQuarantineStatus = quarantineInspector.getQuarantineStatus(for: snapExecutablePath)
                 
             } else {
                 
@@ -258,7 +260,7 @@ final class InspectorEngine {
                     snapBundledStatus = snapExecutablePath.path.contains(".app/Contents/MacOS/") ? BundledStatus.bundled : BundledStatus.bare
                     
                     snapSigningInfo = self.signingInspector.getSigningSummary(path: snapExecutablePath)
-                    snapQuarantineStatus = getQuarantineStatus(for: snapExecutablePath)
+                    snapQuarantineStatus = quarantineInspector.getQuarantineStatus(for: snapExecutablePath)
                     
                 } else {
                     
@@ -305,94 +307,6 @@ final class InspectorEngine {
         
         self.runningProcessCount = self.processes.count
         //print("process struct contains \(self.runningProcessCount) processes")
-    }
-
-    /// Determines whether quarantine metadata is present on an executable file.
-    ///
-    /// This inspects the presence of the `com.apple.quarantine` extended attribute.
-    /// Absence of this attribute does not imply local origin or safety; metadata
-    /// may be missing, stripped, or never applied depending on the execution path.
-    ///
-    /// - Parameter url: The executable file URL to inspect.
-    /// - Returns: A `QuarantineStatus` representing observed presence, absence,
-    ///            or an unknown/error condition.
-    private func getQuarantineStatus(for url: URL) -> QuarantineStatus {
-        
-        let pathstr = url.path
-        var err: Int32
-        
-        // pass 1 for size and errors
-        let size: Int = pathstr.withCString { cpath in
-            getxattr(cpath, "com.apple.quarantine", nil, 0, 0, 0)
-        }
-
-        if size == -1 {
-            err = errno
-            if err == ENOATTR { return .absent }
-            else { return .unknown(reason: "getxattr failed (errno \(err))") }
-        }
-        
-        // pass 2 for the struct
-        var data = Data(count: size)
-        var size2: Int = 0
-        
-        pathstr.withCString { cpath in
-            data.withUnsafeMutableBytes { buffer in
-            size2 = getxattr(cpath, "com.apple.quarantine", buffer.baseAddress, size, 0, 0)
-            }
-        }
-        
-        if size2 == -1 {
-            err = errno
-            return .unknown(reason: "getxattr failed (errno \(err))")
-        }
-        
-        let slice = data.prefix(size2)
-        let qDetailsStr = String(data: slice, encoding: .utf8)
-        
-        guard let qDetailsStr else {
-            return .present(details: QuarantineDetails(
-                    raw: "<non-utf8>",
-                    flags: nil,
-                    timestamp: nil,
-                    agentName: nil,
-                    eventIdentifier: nil))
-        }
-        
-        let qDetailsStruct = parseQuarantineXattr(qDetailsStr)
-        return .present(details:qDetailsStruct)
-
-    }
-        
-    func copySelectedReportToClipboard() {
-            guard let narrative = selectedNarrative else { return }
-            let text = narrative.asPlainText()
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(text, forType: .string)
-        }
-        
-    @MainActor
-    func exportSelectedReportAsMarkdown() {
-        
-        guard let narrative = selectedNarrative else { return }
-
-        
-        let panel = NSSavePanel()
-
-        if let mdType = UTType(filenameExtension: "md") {
-            panel.allowedContentTypes = [mdType]
-        }
-
-        panel.nameFieldStringValue = "process-report.md"
-        panel.canCreateDirectories = true
-
-        if panel.runModal() == .OK, let url = panel.url {
-            do {
-                try narrative.asMarkdown().write(to: url, atomically: true, encoding: .utf8)
-            } catch {
-                print("Failed to export markdown: \(error)")
-            }
-        }
     }
 
     /// Creates the engine and performs an initial refresh to populate the process list.

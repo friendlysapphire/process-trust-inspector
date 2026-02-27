@@ -25,18 +25,6 @@ struct QuarantineDetails {
     let eventIdentifier: String?
 }
 
-extension QuarantineDetails {
-    var summary: String {
-        var parts: [String] = []
-        if let agentName, !agentName.isEmpty { parts.append("Agent: \(agentName)") }
-        if let timestamp {
-            parts.append("When: \(timestamp.formatted(date: .abbreviated, time: .shortened))")
-        }
-        if let eventIdentifier, !eventIdentifier.isEmpty { parts.append("ID: \(eventIdentifier)") }
-        return parts.isEmpty ? "Present" : parts.joined(separator: " · ")
-    }
-}
-
 func parseQuarantineXattr(_ raw: String) -> QuarantineDetails {
     let components = raw.split(separator: ";", omittingEmptySubsequences: false)
         .map { String($0) }
