@@ -19,7 +19,7 @@
 		D9F819B52F2E984700AD18BA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		D9F819B62F2E984700AD18BA /* InspectorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorEngine.swift; sourceTree = "<group>"; };
 		D9F819B72F2E984700AD18BA /* ProcessTrustInspectorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessTrustInspectorApp.swift; sourceTree = "<group>"; };
-		D9F819BE2F2E9AA200AD18BA /* SingingSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingingSummary.swift; sourceTree = "<group>"; };
+		D9F819BE2F2E9AA200AD18BA /* SigningSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningSummary.swift; sourceTree = "<group>"; };
 		D9F819C32F2E9B1900AD18BA /* ProcessSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessSnapshot.swift; sourceTree = "<group>"; };
 		D9F819D12F2EA67900AD18BA /* CodeSigningInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSigningInspector.swift; sourceTree = "<group>"; };
 		D9F819DB2F2FE59B00AD18BA /* ProcessInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessInspector.swift; sourceTree = "<group>"; };
@@ -92,7 +92,7 @@
 				D983F7342F4A22C900DE817F /* EngineNarrativeExport.swift */,
 				D9C76F422F3525BF005AA5C2 /* EngineNarrative.swift */,
 				D9F819C32F2E9B1900AD18BA /* ProcessSnapshot.swift */,
-				D9F819BE2F2E9AA200AD18BA /* SingingSummary.swift */,
+				D9F819BE2F2E9AA200AD18BA /* SigningSummary.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
