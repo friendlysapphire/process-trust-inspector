@@ -43,7 +43,9 @@ struct NarrativeBuilder {
     /// All output is best-effort and may contain unknown fields with explicit
     /// reasons when metadata is unavailable.
     ///
-    /// - Parameter snapshot: A point-in-time process identity snapshot produced by the engine/inspectors.
+    /// - Parameters:
+    ///   - snapshot: A point-in-time process identity snapshot produced by the engine/inspectors.
+    ///   - parentInfo: Relationship context for the selected process and its parent.
     /// - Returns: A structured `EngineNarrative` that the UI can render without recomputing meaning.
     func build(from snapshot: ProcessSnapshot, _ parentInfo: ParentProcessInfo) -> EngineNarrative {
 

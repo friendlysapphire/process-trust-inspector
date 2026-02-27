@@ -1,5 +1,5 @@
 //
-//  EngineNarrativeModels.swift
+//  EngineNarrative.swift
 //  ProcessTrustInspector
 //
 //  UI-facing output models: structured narrative + fact blocks.
@@ -138,6 +138,10 @@ struct NarrativeSection: Identifiable {
     }
 }
 
+/// Stable section identity used by UI/export routing.
+///
+/// `title` is display copy and may change over time; `NarrativeSectionKey`
+/// is the semantic identity consumers should branch on.
 enum NarrativeSectionKey: String {
     case identity
     case processLineage
@@ -190,6 +194,10 @@ struct FactLine: Identifiable {
     }
 }
 
+/// Stable fact identity used by specialized renderers and export formatting.
+///
+/// `label` is display copy and may change; `FactLineKey` is the semantic key
+/// for routing/grouping behavior and copy lookup.
 enum FactLineKey: String {
     case codeSignature
     case appStoreCertificatePolicyOID
@@ -222,6 +230,10 @@ enum FactLineKey: String {
     case unknown
 }
 
+/// Shared display-copy lookup for section titles, fact labels, and a few helper blurbs.
+///
+/// UI and export call into this so wording stays aligned while engine models
+/// keep stable semantic keys.
 enum NarrativeDisplayCopy {
     static let provenanceDetailFactKeys: Set<FactLineKey> = [
         .provenanceQuarantineAgent,
@@ -229,6 +241,12 @@ enum NarrativeDisplayCopy {
         .provenanceQuarantineEventIdentifier
     ]
 
+    /// Resolves a display title for a section key.
+    ///
+    /// - Parameters:
+    ///   - key: Semantic section identity.
+    ///   - fallback: Existing section title to use when no override is defined.
+    /// - Returns: Display title to render/export.
     static func sectionTitle(for key: NarrativeSectionKey, fallback: String) -> String {
         switch key {
         case .runtimeConstraints:
@@ -240,6 +258,12 @@ enum NarrativeDisplayCopy {
         }
     }
 
+    /// Resolves a display label for a fact key.
+    ///
+    /// - Parameters:
+    ///   - key: Semantic fact identity.
+    ///   - fallback: Existing fact label to use when no override is defined.
+    /// - Returns: Display label to render/export.
     static func factLabel(for key: FactLineKey, fallback: String) -> String {
         switch key {
         case .codeSignature:
@@ -303,6 +327,10 @@ enum NarrativeDisplayCopy {
         }
     }
 
+    /// Returns optional explanatory helper text for runtime-related facts.
+    ///
+    /// - Parameter key: Semantic fact identity.
+    /// - Returns: A short explanatory sentence for UI display, or `nil`.
     static func runtimeExplanation(for key: FactLineKey) -> String? {
         switch key {
         case .runtimeAppSandbox:

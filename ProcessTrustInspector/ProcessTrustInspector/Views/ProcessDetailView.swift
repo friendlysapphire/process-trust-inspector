@@ -438,6 +438,10 @@ private struct ProvenanceBlock: View {
         }
     }
 
+    /// DEBUG-only invariant check for specialized provenance rendering.
+    ///
+    /// Ensures each fact is rendered exactly once across specialized rows plus
+    /// generic fallback rows (no silent drops, no duplicates).
     private func debugAssertNoDroppedFacts() {
 #if DEBUG
         let allIDs = Set(facts.map(\.id))
