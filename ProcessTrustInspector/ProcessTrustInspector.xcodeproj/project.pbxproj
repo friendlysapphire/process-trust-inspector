@@ -13,7 +13,7 @@
 		D978689A2F5213CF00E581A2 /* ProcessInspectorRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessInspectorRecords.swift; sourceTree = "<group>"; };
 		D978689B2F5213CF00E581A2 /* QuarantineInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuarantineInspector.swift; sourceTree = "<group>"; };
 		D978689E2F5213DD00E581A2 /* InspectorEngine+Export.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "InspectorEngine+Export.swift"; sourceTree = "<group>"; };
-		D983F7342F4A22C900DE817F /* EngineNarrativeExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineNarrativeExport.swift; sourceTree = "<group>"; };
+		D983F7342F4A22C900DE817F /* EngineNarrative+Export.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EngineNarrative+Export.swift"; sourceTree = "<group>"; };
 		D9A48EE42F4A442400DC6882 /* SecurityStatusExplainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityStatusExplainer.swift; sourceTree = "<group>"; };
 		D9C76F3F2F33F2F3005AA5C2 /* ProcessDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessDetailView.swift; sourceTree = "<group>"; };
 		D9C76F422F3525BF005AA5C2 /* EngineNarrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineNarrative.swift; sourceTree = "<group>"; };
@@ -91,7 +91,7 @@
 			children = (
 				D9FF18542F5118D40059527A /* QuarantineModels.swift */,
 				D9A48EE42F4A442400DC6882 /* SecurityStatusExplainer.swift */,
-				D983F7342F4A22C900DE817F /* EngineNarrativeExport.swift */,
+				D983F7342F4A22C900DE817F /* EngineNarrative+Export.swift */,
 				D9C76F422F3525BF005AA5C2 /* EngineNarrative.swift */,
 				D9F819C32F2E9B1900AD18BA /* ProcessSnapshot.swift */,
 				D9F819BE2F2E9AA200AD18BA /* SigningSummary.swift */,
