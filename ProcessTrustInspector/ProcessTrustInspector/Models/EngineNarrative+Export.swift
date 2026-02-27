@@ -49,8 +49,9 @@ extension EngineNarrative {
 
         // Sections
         for section in sections {
-            out.append(section.title)
-            out.append(String(repeating: "-", count: section.title.count))
+            let sectionTitle = section.exportTitle
+            out.append(sectionTitle)
+            out.append(String(repeating: "-", count: sectionTitle.count))
 
             if !section.interpretation.isEmpty {
                 out.append("")
@@ -136,7 +137,7 @@ extension EngineNarrative {
 
         // Sections
         for section in sections {
-            out.append("## \(section.title)")
+            out.append("## \(section.exportTitle)")
             out.append("")
 
             if !section.interpretation.isEmpty {
@@ -184,13 +185,13 @@ private extension FactLine {
     func asPlainTextLine() -> String {
         let v = (value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
         if !v.isEmpty {
-            return "\(label): \(v)"
+            return "\(exportLabel): \(v)"
         }
         let r = (unknownReason?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
         if !r.isEmpty {
-            return "\(label): Unknown (\(r))"
+            return "\(exportLabel): Unknown (\(r))"
         }
-        return "\(label): Unknown"
+        return "\(exportLabel): Unknown"
     }
 }
 
@@ -198,12 +199,48 @@ private extension FactLine {
     func asMarkdownLine() -> String {
         let v = (value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
         if !v.isEmpty {
-            return "**\(label):** \(v)"
+            return "**\(exportLabel):** \(v)"
         }
         let r = (unknownReason?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
         if !r.isEmpty {
-            return "**\(label):** Unknown (\(r))"
+            return "**\(exportLabel):** Unknown (\(r))"
         }
-        return "**\(label):** Unknown"
+        return "**\(exportLabel):** Unknown"
+    }
+}
+
+private extension NarrativeSection {
+    var exportTitle: String {
+        switch key {
+        case .runtimeConstraints:
+            return "Runtime Constraints"
+        case .provenance:
+            return "Provenance"
+        default:
+            return title
+        }
+    }
+}
+
+private extension FactLine {
+    var exportLabel: String {
+        switch key {
+        case .runtimeAppSandbox:
+            return "App Sandbox"
+        case .runtimeHardenedRuntime:
+            return "Hardened Runtime"
+        case .provenanceQuarantineMetadata:
+            return "Quarantine metadata"
+        case .provenanceQuarantineAgent:
+            return "Quarantine agent"
+        case .provenanceQuarantineFirstObserved:
+            return "First observed"
+        case .provenanceQuarantineEventIdentifier:
+            return "Event identifier"
+        case .provenanceGatekeeperApplicability:
+            return "Gatekeeper applicability"
+        default:
+            return label
+        }
     }
 }
