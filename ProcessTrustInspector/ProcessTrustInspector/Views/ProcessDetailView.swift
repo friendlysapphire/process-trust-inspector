@@ -22,6 +22,18 @@
 import SwiftUI
 import AppKit
 
+private enum LabelKeys {
+    static let provenanceTitle = "provenance"
+    static let quarantineMetadata = "quarantine metadata"
+    static let gatekeeperApplicability = "gatekeeper applicability"
+    static let gatekeeperRelevance = "gatekeeper relevance"
+    static let quarantineDetailLabels: Set<String> = [
+        "quarantine agent",
+        "first observed",
+        "event identifier"
+    ]
+}
+
 /// Renders the explanation-first narrative for a selected process.
 ///
 /// `ProcessDetailView` is a pure view over `EngineNarrative`.
@@ -56,9 +68,7 @@ struct ProcessDetailView: View {
                             Text(styledSummaryText(from: narrative.summary))
                                 .font(.body)
                         }
-                        .padding(12)
-                        .background(.thinMaterial)
-                        .cornerRadius(10)
+                        .cardShell(material: .thinMaterial)
                     }
                     
                     // Trust Classification (orientation, not verdict)
@@ -96,25 +106,11 @@ struct ProcessDetailView: View {
                         }
                         
                         if !narrative.trustClassification.limits.isEmpty {
-                            VStack(alignment: .leading, spacing: 4) {
-                                ForEach(narrative.trustClassification.limits, id: \.text) { limit in
-                                    HStack(alignment: .top, spacing: 6) {
-                                        Text("•")
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                        
-                                        Text(limit.text)
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            }
+                            LimitList(limits: narrative.trustClassification.limits, wrapForLongLines: false)
                             .padding(.top, 2)
                         }
                     }
-                    .padding(12)
-                    .background(.thinMaterial)
-                    .cornerRadius(10)
+                    .cardShell(material: .thinMaterial)
                     
                     // Narrative sections
                     ForEach(narrative.sections) { section in
@@ -127,20 +123,8 @@ struct ProcessDetailView: View {
                             Text("Limits & Uncertainty")
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                ForEach(narrative.globalLimits, id: \.text) { limit in
-                                    HStack(alignment: .top, spacing: 6) {
-                                        Text("•")
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                        
-                                        Text(limit.text)
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            }
+
+                            LimitList(limits: narrative.globalLimits, wrapForLongLines: false)
                         }
                         .padding(.top, 4)
                     }
@@ -214,10 +198,10 @@ private struct SectionCard: View {
     }
 
     private var isProvenanceSection: Bool {
-        let normalized = section.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if normalized == "provenance" { return true }
-        let labels = Set(section.facts.map { $0.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() })
-        return labels.contains("quarantine metadata") || labels.contains("gatekeeper applicability")
+        let normalized = normalizedLabel(section.title)
+        if normalized == LabelKeys.provenanceTitle { return true }
+        let labels = Set(section.facts.map { normalizedLabel($0.label) })
+        return labels.contains(LabelKeys.quarantineMetadata) || labels.contains(LabelKeys.gatekeeperApplicability)
     }
 
     var body: some View {
@@ -247,28 +231,11 @@ private struct SectionCard: View {
             }
 
             if !section.limits.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(section.limits, id: \.text) { limit in
-                        HStack(alignment: .top, spacing: 6) {
-                            Text("•")
-                                .font(.callout)
-                                .foregroundColor(.secondary)
-
-                            Text(limit.text)
-                                .font(.callout)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)        // allow multi-line
-                                .frame(maxWidth: .infinity, alignment: .leading)     // take the available width
-                                .layoutPriority(1)                                   // don't let it get squeezed/truncated
-                        }
-                    }
-                }
+                LimitList(limits: section.limits, wrapForLongLines: true)
                 .padding(.top, 2)
             }
         }
-        .padding(12)
-        .background(.regularMaterial)
-        .cornerRadius(10)
+        .cardShell(material: .regularMaterial)
     }
 }
 
@@ -360,6 +327,7 @@ private struct RuntimeConstraintRow: View {
                     .padding(.leading, 28)
             }
         }
+        .textSelection(.disabled)
         .contextMenu {
             Button("Copy Value") {
                 copyToPasteboard(copyValueText())
@@ -441,29 +409,19 @@ private enum ProvenanceStatus: Equatable {
 private struct ProvenanceBlock: View {
     let facts: [FactLine]
 
-    private let quarantineDetailLabels: Set<String> = [
-        "quarantine agent",
-        "first observed",
-        "event identifier"
-    ]
-
-    private func normalizedLabel(_ label: String) -> String {
-        label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    }
-
     private var quarantineFact: FactLine? {
-        facts.first(where: { normalizedLabel($0.label) == "quarantine metadata" })
+        facts.first(where: { normalizedLabel($0.label) == LabelKeys.quarantineMetadata })
     }
 
     private var gatekeeperFact: FactLine? {
         facts.first(where: {
             let k = normalizedLabel($0.label)
-            return k == "gatekeeper applicability" || k == "gatekeeper relevance"
+            return k == LabelKeys.gatekeeperApplicability || k == LabelKeys.gatekeeperRelevance
         })
     }
 
     private var quarantineDetailFacts: [FactLine] {
-        facts.filter { quarantineDetailLabels.contains(normalizedLabel($0.label)) }
+        facts.filter { LabelKeys.quarantineDetailLabels.contains(normalizedLabel($0.label)) }
     }
 
     private var remainingFacts: [FactLine] {
@@ -578,6 +536,7 @@ private struct ProvenanceRow: View {
                 EmptyView()
             }
         }
+        .textSelection(.disabled)
         .contextMenu {
             Button("Copy Value") {
                 copyToPasteboard(copyValueText())
@@ -700,7 +659,7 @@ private struct FactRow: View {
                     .padding(.leading, 180)
             }
         }
-        .textSelection(.enabled)
+        .textSelection(.disabled)
         .contextMenu {
             Button("Copy Value") {
                 copyToPasteboard(copyValueText())
@@ -733,8 +692,51 @@ private struct FactRow: View {
 
 }
 
-/// Shared pasteboard helper for row context menus in this file.
+private struct LimitList: View {
+    let limits: [LimitNote]
+    let wrapForLongLines: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(limits, id: \.text) { limit in
+                HStack(alignment: .top, spacing: 6) {
+                    Text("•")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+
+                    if wrapForLongLines {
+                        Text(limit.text)
+                            .font(.callout)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .layoutPriority(1)
+                    } else {
+                        Text(limit.text)
+                            .font(.callout)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private extension View {
+    func cardShell(material: Material) -> some View {
+        padding(12)
+            .background(material)
+            .cornerRadius(10)
+    }
+}
+
+/// Centralized clipboard helper used by context menus in this file.
 private func copyToPasteboard(_ text: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(text, forType: .string)
+}
+
+/// Shared label canonicalization for section/fact matching in this file.
+private func normalizedLabel(_ label: String) -> String {
+    label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 }

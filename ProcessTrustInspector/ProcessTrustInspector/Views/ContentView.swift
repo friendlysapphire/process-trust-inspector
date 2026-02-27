@@ -136,6 +136,11 @@ struct ContentView: View {
         }
     }
 
+    private func refreshAndRevalidateSelection() {
+        engine.refresh()
+        clearSelectionIfHidden()
+    }
+
     var body: some View {
         NavigationSplitView {
             VStack(spacing: 0) {
@@ -209,8 +214,7 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button {
-                        engine.refresh()
-                        clearSelectionIfHidden()
+                        refreshAndRevalidateSelection()
                     } label: {
                         Label("Refresh", systemImage: "arrow.clockwise")
                     }
@@ -261,9 +265,8 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            engine.refresh()
+            refreshAndRevalidateSelection()
             processScope = engine.showAllProcesses ? .all : .appsOnly
-            clearSelectionIfHidden()
         }
         .onChange(of: engine.selectedPID) { _, newValue in
             if let pid = newValue {
@@ -280,8 +283,7 @@ struct ContentView: View {
         }
         .onChange(of: processScope) { _, newValue in
             engine.showAllProcesses = (newValue == .all)
-            engine.refresh()
-            clearSelectionIfHidden()
+            refreshAndRevalidateSelection()
         }
     }
 

@@ -160,7 +160,7 @@ struct NarrativeBuilder {
             // If quarantine is present, Gatekeeper relevance is straightforward.
             switch snapshot.quarantineStatus {
             case .present:
-                return ("    Likely evaluated at first launch", nil)
+                return ("Likely evaluated at first launch", nil)
             case .unknown(let reason):
                 return (nil, reason)
             case .absent:
@@ -172,9 +172,9 @@ struct NarrativeBuilder {
             case .unknown(let reason):
                 return (nil, reason)
             case .bare:
-                return ("    Gatekeeper evaluation unlikely (not an app bundle)", nil)
+                return ("Gatekeeper evaluation unlikely (not an app bundle)", nil)
             case .bundled:
-                return ("    Gatekeeper evaluation possible at first launch", nil)
+                return ("Gatekeeper evaluation possible at first launch", nil)
             }
         }
         
