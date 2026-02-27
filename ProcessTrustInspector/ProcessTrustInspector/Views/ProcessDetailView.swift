@@ -68,9 +68,7 @@ struct ProcessDetailView: View {
                             Text(styledSummaryText(from: narrative.summary))
                                 .font(.body)
                         }
-                        .padding(12)
-                        .background(.thinMaterial)
-                        .cornerRadius(10)
+                        .cardShell(material: .thinMaterial)
                     }
                     
                     // Trust Classification (orientation, not verdict)
@@ -112,9 +110,7 @@ struct ProcessDetailView: View {
                             .padding(.top, 2)
                         }
                     }
-                    .padding(12)
-                    .background(.thinMaterial)
-                    .cornerRadius(10)
+                    .cardShell(material: .thinMaterial)
                     
                     // Narrative sections
                     ForEach(narrative.sections) { section in
@@ -239,9 +235,7 @@ private struct SectionCard: View {
                 .padding(.top, 2)
             }
         }
-        .padding(12)
-        .background(.regularMaterial)
-        .cornerRadius(10)
+        .cardShell(material: .regularMaterial)
     }
 }
 
@@ -333,22 +327,12 @@ private struct RuntimeConstraintRow: View {
                     .padding(.leading, 28)
             }
         }
-        .contextMenu {
-            Button("Copy Value") {
-                copyToPasteboard(copyValueText())
-            }
-
-            Button("Copy Label + Value") {
-                copyToPasteboard("\(label): \(copyValueText())")
-            }
-
-            if let r = copyReasonText() {
-                Divider()
-                Button("Copy Unknown Reason") {
-                    copyToPasteboard(r)
-                }
-            }
-        }
+        .factCopyContextMenu(
+            label: label,
+            value: copyValueText(),
+            extraText: copyReasonText(),
+            extraActionLabel: "Copy Unknown Reason"
+        )
     }
 
     // MARK: - Copy helpers (UI only)
@@ -541,22 +525,12 @@ private struct ProvenanceRow: View {
                 EmptyView()
             }
         }
-        .contextMenu {
-            Button("Copy Value") {
-                copyToPasteboard(copyValueText())
-            }
-
-            Button("Copy Label + Value") {
-                copyToPasteboard("\(label): \(copyValueText())")
-            }
-
-            if let extra = copyReasonOrNoteText() {
-                Divider()
-                Button(labelForReasonOrNote()) {
-                    copyToPasteboard(extra)
-                }
-            }
-        }
+        .factCopyContextMenu(
+            label: label,
+            value: copyValueText(),
+            extraText: copyReasonOrNoteText(),
+            extraActionLabel: labelForReasonOrNote()
+        )
     }
 
     // MARK: - Copy helpers (UI only)
@@ -664,22 +638,12 @@ private struct FactRow: View {
             }
         }
         .textSelection(.enabled)
-        .contextMenu {
-            Button("Copy Value") {
-                copyToPasteboard(copyValueText())
-            }
-
-            Button("Copy Label + Value") {
-                copyToPasteboard("\(fact.label): \(copyValueText())")
-            }
-
-            if let reason = fact.unknownReason, !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Divider()
-                Button("Copy Unknown Reason") {
-                    copyToPasteboard(reason)
-                }
-            }
-        }
+        .factCopyContextMenu(
+            label: fact.label,
+            value: copyValueText(),
+            extraText: fact.unknownReason?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty,
+            extraActionLabel: "Copy Unknown Reason"
+        )
     }
 
     // MARK: - Copy helpers (UI only)
@@ -723,6 +687,62 @@ private struct LimitList: View {
                 }
             }
         }
+    }
+}
+
+private struct FactCopyContextMenuModifier: ViewModifier {
+    let label: String
+    let value: String
+    let extraText: String?
+    let extraActionLabel: String
+
+    func body(content: Content) -> some View {
+        content.contextMenu {
+            Button("Copy Value") {
+                copyToPasteboard(value)
+            }
+
+            Button("Copy Label + Value") {
+                copyToPasteboard("\(label): \(value)")
+            }
+
+            if let extra = extraText {
+                Divider()
+                Button(extraActionLabel) {
+                    copyToPasteboard(extra)
+                }
+            }
+        }
+    }
+}
+
+private extension View {
+    func factCopyContextMenu(
+        label: String,
+        value: String,
+        extraText: String?,
+        extraActionLabel: String
+    ) -> some View {
+        modifier(
+            FactCopyContextMenuModifier(
+                label: label,
+                value: value,
+                extraText: extraText,
+                extraActionLabel: extraActionLabel
+            )
+        )
+    }
+
+    func cardShell(material: Material) -> some View {
+        padding(12)
+            .background(material)
+            .cornerRadius(10)
+    }
+}
+
+private extension String {
+    var nonEmpty: String? {
+        isEmpty ? nil : self
     }
 }
 
