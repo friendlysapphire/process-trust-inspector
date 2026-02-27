@@ -2,6 +2,8 @@
 
 This is a practical guide to understanding how Process Trust Inspector turns raw process data into UI and export output.
 
+This document describes the current v1.x architecture and rendering contract. If you change section routing, fact keys, copy ownership, or export behavior, update this file alongside the refactor.
+
 ## 1) Start Here (High-Level Flow)
 
 1. `InspectorEngine` collects process/snapshot data.
@@ -52,6 +54,7 @@ Provenance safety:
 - `ProvenanceBlock` computes specialized facts + `remainingFacts`.
 - It always renders remaining facts generically.
 - Debug assertions check no fact is dropped or double-rendered.
+- Debug builds assert that specialized + fallback rendering covers all facts exactly once.
 
 ## 5) Export Rendering Map
 
@@ -82,6 +85,7 @@ This keeps export aligned with UI copy rules.
 ## 7) Safe Editing Rules
 
 - Prefer adding keys before adding logic.
+- Engine should emit semantic meaning and reasons; UI owns phrasing.
 - Keep specialized renderers narrow and explicit.
 - Always preserve generic fallback for unknown/new facts.
 - Keep copy changes in `NarrativeDisplayCopy`.
