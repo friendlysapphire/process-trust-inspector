@@ -201,6 +201,57 @@ enum FactLineKey: String {
     case unknown
 }
 
+enum NarrativeDisplayCopy {
+    static let provenanceDetailFactKeys: Set<FactLineKey> = [
+        .provenanceQuarantineAgent,
+        .provenanceQuarantineFirstObserved,
+        .provenanceQuarantineEventIdentifier
+    ]
+
+    static func sectionTitle(for key: NarrativeSectionKey, fallback: String) -> String {
+        switch key {
+        case .runtimeConstraints:
+            return "Runtime Constraints"
+        case .provenance:
+            return "Provenance"
+        default:
+            return fallback
+        }
+    }
+
+    static func factLabel(for key: FactLineKey, fallback: String) -> String {
+        switch key {
+        case .runtimeAppSandbox:
+            return "App Sandbox"
+        case .runtimeHardenedRuntime:
+            return "Hardened Runtime"
+        case .provenanceQuarantineMetadata:
+            return "Quarantine metadata"
+        case .provenanceQuarantineAgent:
+            return "Quarantine agent"
+        case .provenanceQuarantineFirstObserved:
+            return "First observed"
+        case .provenanceQuarantineEventIdentifier:
+            return "Event identifier"
+        case .provenanceGatekeeperApplicability:
+            return "Gatekeeper applicability"
+        default:
+            return fallback
+        }
+    }
+
+    static func runtimeExplanation(for key: FactLineKey) -> String? {
+        switch key {
+        case .runtimeAppSandbox:
+            return "A restricted execution environment that limits what the app can access unless explicitly allowed."
+        case .runtimeHardenedRuntime:
+            return "A code-signing mode that enables additional runtime protections and is commonly required for notarization."
+        default:
+            return nil
+        }
+    }
+}
+
 /// A non-alarmist statement describing uncertainty or scope limits.
 ///
 /// `LimitNote` is used to explicitly communicate what a section

@@ -22,55 +22,6 @@
 import SwiftUI
 import AppKit
 
-private enum LabelKeys {
-    static let quarantineDetailKeys: Set<FactLineKey> = [
-        .provenanceQuarantineAgent,
-        .provenanceQuarantineFirstObserved,
-        .provenanceQuarantineEventIdentifier
-    ]
-}
-
-private enum DetailCopy {
-    static func runtimeLabel(for fact: FactLine) -> String {
-        switch fact.key {
-        case .runtimeAppSandbox:
-            return "App Sandbox"
-        case .runtimeHardenedRuntime:
-            return "Hardened Runtime"
-        default:
-            return fact.label
-        }
-    }
-
-    static func runtimeExplanation(for key: FactLineKey) -> String? {
-        switch key {
-        case .runtimeAppSandbox:
-            return "A restricted execution environment that limits what the app can access unless explicitly allowed."
-        case .runtimeHardenedRuntime:
-            return "A code-signing mode that enables additional runtime protections and is commonly required for notarization."
-        default:
-            return nil
-        }
-    }
-
-    static func provenanceLabel(for fact: FactLine) -> String {
-        switch fact.key {
-        case .provenanceQuarantineMetadata:
-            return "Quarantine metadata"
-        case .provenanceQuarantineAgent:
-            return "Quarantine agent"
-        case .provenanceQuarantineFirstObserved:
-            return "First observed"
-        case .provenanceQuarantineEventIdentifier:
-            return "Event identifier"
-        case .provenanceGatekeeperApplicability:
-            return "Gatekeeper applicability"
-        default:
-            return fact.label
-        }
-    }
-}
-
 /// Renders the explanation-first narrative for a selected process.
 ///
 /// `ProcessDetailView` is a pure view over `EngineNarrative`.
@@ -283,7 +234,7 @@ private struct RuntimeConstraintsBlock: View {
             ForEach(facts) { fact in
                 RuntimeConstraintRow(
                     key: fact.key,
-                    label: DetailCopy.runtimeLabel(for: fact),
+                    label: NarrativeDisplayCopy.factLabel(for: fact.key, fallback: fact.label),
                     status: status(from: fact)
                 )
             }
@@ -316,7 +267,7 @@ private struct RuntimeConstraintRow: View {
     let status: RuntimeConstraintStatus
 
     private var explanationText: String? {
-        DetailCopy.runtimeExplanation(for: key)
+        NarrativeDisplayCopy.runtimeExplanation(for: key)
     }
     
     var body: some View {
@@ -434,7 +385,7 @@ private struct ProvenanceBlock: View {
     }
 
     private var quarantineDetailFacts: [FactLine] {
-        facts.filter { LabelKeys.quarantineDetailKeys.contains($0.key) }
+        facts.filter { NarrativeDisplayCopy.provenanceDetailFactKeys.contains($0.key) }
     }
 
     private var remainingFacts: [FactLine] {
@@ -452,12 +403,13 @@ private struct ProvenanceBlock: View {
     }
 
     var body: some View {
+        let _ = debugAssertNoDroppedFacts()
         VStack(alignment: .leading, spacing: 8) {
 
             // Quarantine: observed metadata present/absent/unknown
             if let q = quarantineFact {
                 ProvenanceRow(
-                    label: DetailCopy.provenanceLabel(for: q),
+                    label: NarrativeDisplayCopy.factLabel(for: q.key, fallback: q.label),
                     status: quarantineStatus(from: q)
                 )
             }
@@ -466,7 +418,7 @@ private struct ProvenanceBlock: View {
             ForEach(quarantineDetailFacts) { fact in
                 FactRow(
                     fact: fact,
-                    labelOverride: DetailCopy.provenanceLabel(for: fact)
+                    labelOverride: NarrativeDisplayCopy.factLabel(for: fact.key, fallback: fact.label)
                 )
                     .padding(.leading, 28)
             }
@@ -474,7 +426,7 @@ private struct ProvenanceBlock: View {
             // Gatekeeper: not directly observed in v1; treat as inferred applicability unless unknown
             if let gk = gatekeeperFact {
                 ProvenanceRow(
-                    label: DetailCopy.provenanceLabel(for: gk),
+                    label: NarrativeDisplayCopy.factLabel(for: gk.key, fallback: gk.label),
                     status: gatekeeperStatus(from: gk)
                 )
             }
@@ -484,6 +436,20 @@ private struct ProvenanceBlock: View {
                 FactRow(fact: fact)
             }
         }
+    }
+
+    private func debugAssertNoDroppedFacts() {
+#if DEBUG
+        let allIDs = Set(facts.map(\.id))
+        let quarantineIDs = quarantineFact.map { Set([$0.id]) } ?? []
+        let detailIDs = Set(quarantineDetailFacts.map(\.id))
+        let gatekeeperIDs = gatekeeperFact.map { Set([$0.id]) } ?? []
+        let remainingIDs = Set(remainingFacts.map(\.id))
+        let consumed = quarantineIDs.union(detailIDs).union(gatekeeperIDs)
+
+        assert(consumed.intersection(remainingIDs).isEmpty, "ProvenanceBlock rendered a fact in both specialized and fallback paths.")
+        assert(consumed.union(remainingIDs) == allIDs, "ProvenanceBlock dropped one or more facts.")
+#endif
     }
 
     private func quarantineStatus(from fact: FactLine) -> ProvenanceStatus {

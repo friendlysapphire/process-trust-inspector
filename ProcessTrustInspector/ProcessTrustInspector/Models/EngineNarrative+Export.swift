@@ -211,36 +211,12 @@ private extension FactLine {
 
 private extension NarrativeSection {
     var exportTitle: String {
-        switch key {
-        case .runtimeConstraints:
-            return "Runtime Constraints"
-        case .provenance:
-            return "Provenance"
-        default:
-            return title
-        }
+        NarrativeDisplayCopy.sectionTitle(for: key, fallback: title)
     }
 }
 
 private extension FactLine {
     var exportLabel: String {
-        switch key {
-        case .runtimeAppSandbox:
-            return "App Sandbox"
-        case .runtimeHardenedRuntime:
-            return "Hardened Runtime"
-        case .provenanceQuarantineMetadata:
-            return "Quarantine metadata"
-        case .provenanceQuarantineAgent:
-            return "Quarantine agent"
-        case .provenanceQuarantineFirstObserved:
-            return "First observed"
-        case .provenanceQuarantineEventIdentifier:
-            return "Event identifier"
-        case .provenanceGatekeeperApplicability:
-            return "Gatekeeper applicability"
-        default:
-            return label
-        }
+        NarrativeDisplayCopy.factLabel(for: key, fallback: label)
     }
 }
