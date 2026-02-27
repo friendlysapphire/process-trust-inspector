@@ -22,6 +22,18 @@
 import SwiftUI
 import AppKit
 
+private enum LabelKeys {
+    static let provenanceTitle = "provenance"
+    static let quarantineMetadata = "quarantine metadata"
+    static let gatekeeperApplicability = "gatekeeper applicability"
+    static let gatekeeperRelevance = "gatekeeper relevance"
+    static let quarantineDetailLabels: Set<String> = [
+        "quarantine agent",
+        "first observed",
+        "event identifier"
+    ]
+}
+
 /// Renders the explanation-first narrative for a selected process.
 ///
 /// `ProcessDetailView` is a pure view over `EngineNarrative`.
@@ -191,9 +203,9 @@ private struct SectionCard: View {
 
     private var isProvenanceSection: Bool {
         let normalized = normalizedLabel(section.title)
-        if normalized == "provenance" { return true }
+        if normalized == LabelKeys.provenanceTitle { return true }
         let labels = Set(section.facts.map { normalizedLabel($0.label) })
-        return labels.contains("quarantine metadata") || labels.contains("gatekeeper applicability")
+        return labels.contains(LabelKeys.quarantineMetadata) || labels.contains(LabelKeys.gatekeeperApplicability)
     }
 
     var body: some View {
@@ -402,25 +414,19 @@ private enum ProvenanceStatus: Equatable {
 private struct ProvenanceBlock: View {
     let facts: [FactLine]
 
-    private let quarantineDetailLabels: Set<String> = [
-        "quarantine agent",
-        "first observed",
-        "event identifier"
-    ]
-
     private var quarantineFact: FactLine? {
-        facts.first(where: { normalizedLabel($0.label) == "quarantine metadata" })
+        facts.first(where: { normalizedLabel($0.label) == LabelKeys.quarantineMetadata })
     }
 
     private var gatekeeperFact: FactLine? {
         facts.first(where: {
             let k = normalizedLabel($0.label)
-            return k == "gatekeeper applicability" || k == "gatekeeper relevance"
+            return k == LabelKeys.gatekeeperApplicability || k == LabelKeys.gatekeeperRelevance
         })
     }
 
     private var quarantineDetailFacts: [FactLine] {
-        facts.filter { quarantineDetailLabels.contains(normalizedLabel($0.label)) }
+        facts.filter { LabelKeys.quarantineDetailLabels.contains(normalizedLabel($0.label)) }
     }
 
     private var remainingFacts: [FactLine] {
