@@ -359,13 +359,6 @@ private struct RuntimeConstraintRow: View {
                     .foregroundColor(.secondary)
                     .padding(.leading, 28)
             }
-
-            if case .unknown(let reason) = status, let reason, !reason.isEmpty {
-                Text(reason)
-                    .font(.callout)
-                    .foregroundColor(.secondary)
-                    .padding(.leading, 28)
-            }
         }
         .contextMenu {
             Button("Copy Value") {
@@ -405,11 +398,6 @@ private struct RuntimeConstraintRow: View {
         guard case .unknown(let reason) = status else { return nil }
         guard let reason = reason?.trimmingCharacters(in: .whitespacesAndNewlines), !reason.isEmpty else { return nil }
         return reason
-    }
-
-    private func copyToPasteboard(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
     }
 
     @ViewBuilder
@@ -653,11 +641,6 @@ private struct ProvenanceRow: View {
         }
     }
 
-    private func copyToPasteboard(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-    }
-
     @ViewBuilder
     private var statusIcon: some View {
         switch status {
@@ -748,8 +731,9 @@ private struct FactRow: View {
         return "Unknown"
     }
 
-    private func copyToPasteboard(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-    }
+}
+
+private func copyToPasteboard(_ text: String) {
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(text, forType: .string)
 }
