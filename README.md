@@ -25,8 +25,9 @@ For a selected process, it explains:
   - Signature validity
   - Presence of entitlements
   - Structural consistency notes (e.g. identifier mismatches, unexpected signing location)
-- **Provenance**
+  - **Provenance**
   - Quarantine metadata (present / absent / unavailable)
+  - Parsed quarantine details (agent, first observed timestamp, event identifier when available)
   - Gatekeeper applicability (contextual, not an assessment)
 - **Runtime constraints**
   - App Sandbox
@@ -58,7 +59,7 @@ The goal is visibility and understanding, not judgment.
 
 ---
 
-## Recent additions (v1.3)
+## Recent additions (v1.3.5)
 
 - Full process universe enumeration via **libproc (BSD layer)**, merged with NSWorkspace
 - Explicit visibility modeling:
@@ -69,6 +70,12 @@ The goal is visibility and understanding, not judgment.
   - All processes (including background and non-GUI processes)
 - Improved parent process resolution based on the full PID universe
 - Clear labeling of partial or limited visibility
+- Structured quarantine enrichment:
+  - Parsed quarantine agent (e.g. browser or download source)
+  - First observed timestamp (decoded from quarantine metadata)
+  - Quarantine event identifier
+  - Clear separation between quarantine presence and quarantine details
+- Refined Gatekeeper applicability modeling (contextual, not an assessment)
 
 ---
 
@@ -144,7 +151,8 @@ Included in v1.x:
 - App Store certificate policy evidence
 - App Sandbox and Hardened Runtime (declared)
 - Bundled vs bare executable context
-- Quarantine metadata and inferred Gatekeeper relevance
+- Quarantine metadata with structured enrichment (agent, timestamp, identifier)
+- Inferred Gatekeeper applicability (contextual only)
 - Parent process relationship context
 
 Explicitly excluded from v1.x:
