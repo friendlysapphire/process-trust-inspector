@@ -344,6 +344,7 @@ struct NarrativeBuilder {
 
         // MARK: - Identity Section
         let identity = NarrativeSection(
+            key: .identity,
             title: "Identity",
             facts: [
                 FactLine(
@@ -509,6 +510,7 @@ struct NarrativeBuilder {
             facts.append(contentsOf: extraFacts)
 
             return NarrativeSection(
+                key: .processLineage,
                 title: "Process Lineage",
                 facts: facts,
                 interpretation: [
@@ -627,6 +629,7 @@ struct NarrativeBuilder {
             }
 
             return NarrativeSection(
+                key: .codeSigning,
                 title: "Code Signing",
                 facts: signingFacts,
                 interpretation: [
@@ -697,6 +700,7 @@ struct NarrativeBuilder {
 
         // MARK: - Provenance Section
         let provenance = NarrativeSection(
+            key: .provenance,
             title: "Provenance",
             facts: provenanceFacts,
             interpretation: [
@@ -711,6 +715,7 @@ struct NarrativeBuilder {
 
         // MARK: - Runtime Constraints
         let runtimeConstraints = NarrativeSection(
+            key: .runtimeConstraints,
             title: "Runtime Constraints",
             facts: [
                 {

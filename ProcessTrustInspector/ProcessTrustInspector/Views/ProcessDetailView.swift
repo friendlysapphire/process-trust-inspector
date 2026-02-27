@@ -23,7 +23,6 @@ import SwiftUI
 import AppKit
 
 private enum LabelKeys {
-    static let provenanceTitle = "provenance"
     static let quarantineMetadata = "quarantine metadata"
     static let gatekeeperApplicability = "gatekeeper applicability"
     static let gatekeeperRelevance = "gatekeeper relevance"
@@ -188,22 +187,6 @@ struct ProcessDetailView: View {
 private struct SectionCard: View {
     let section: NarrativeSection
 
-    private var isRuntimeConstraintsSection: Bool {
-        let normalized = section.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if normalized == "runtime constraints" || normalized == "runtime constraint" || normalized == "runtime" {
-            return true
-        }
-        let labels = Set(section.facts.map { $0.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() })
-        return labels.contains("app sandbox") || labels.contains("hardened runtime")
-    }
-
-    private var isProvenanceSection: Bool {
-        let normalized = normalizedLabel(section.title)
-        if normalized == LabelKeys.provenanceTitle { return true }
-        let labels = Set(section.facts.map { normalizedLabel($0.label) })
-        return labels.contains(LabelKeys.quarantineMetadata) || labels.contains(LabelKeys.gatekeeperApplicability)
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(section.title)
@@ -218,9 +201,9 @@ private struct SectionCard: View {
                     .padding(.top, 2)
             }
 
-            if isRuntimeConstraintsSection {
+            if section.key == .runtimeConstraints {
                 RuntimeConstraintsBlock(facts: section.facts)
-            } else if isProvenanceSection {
+            } else if section.key == .provenance {
                 ProvenanceBlock(facts: section.facts)
             } else if !section.facts.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {

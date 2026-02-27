@@ -117,22 +117,34 @@ struct TrustClassificationBlock {
 struct NarrativeSection: Identifiable {
     let id = UUID()
 
+    var key: NarrativeSectionKey = .unknown
     var title: String
     var facts: [FactLine] = []
     var interpretation: [String] = []
     var limits: [LimitNote] = []
 
     init(
+        key: NarrativeSectionKey = .unknown,
         title: String,
         facts: [FactLine] = [],
         interpretation: [String] = [],
         limits: [LimitNote] = []
     ) {
+        self.key = key
         self.title = title
         self.facts = facts
         self.interpretation = interpretation
         self.limits = limits
     }
+}
+
+enum NarrativeSectionKey: String {
+    case identity
+    case processLineage
+    case codeSigning
+    case provenance
+    case runtimeConstraints
+    case unknown
 }
 
 // MARK: - Facts & Uncertainty
