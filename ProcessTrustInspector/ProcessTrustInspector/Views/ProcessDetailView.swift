@@ -96,19 +96,7 @@ struct ProcessDetailView: View {
                         }
                         
                         if !narrative.trustClassification.limits.isEmpty {
-                            VStack(alignment: .leading, spacing: 4) {
-                                ForEach(narrative.trustClassification.limits, id: \.text) { limit in
-                                    HStack(alignment: .top, spacing: 6) {
-                                        Text("•")
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                        
-                                        Text(limit.text)
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            }
+                            LimitList(limits: narrative.trustClassification.limits, wrapForLongLines: false)
                             .padding(.top, 2)
                         }
                     }
@@ -127,20 +115,8 @@ struct ProcessDetailView: View {
                             Text("Limits & Uncertainty")
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                ForEach(narrative.globalLimits, id: \.text) { limit in
-                                    HStack(alignment: .top, spacing: 6) {
-                                        Text("•")
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                        
-                                        Text(limit.text)
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            }
+
+                            LimitList(limits: narrative.globalLimits, wrapForLongLines: false)
                         }
                         .padding(.top, 4)
                     }
@@ -214,9 +190,9 @@ private struct SectionCard: View {
     }
 
     private var isProvenanceSection: Bool {
-        let normalized = section.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let normalized = normalizedLabel(section.title)
         if normalized == "provenance" { return true }
-        let labels = Set(section.facts.map { $0.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() })
+        let labels = Set(section.facts.map { normalizedLabel($0.label) })
         return labels.contains("quarantine metadata") || labels.contains("gatekeeper applicability")
     }
 
@@ -247,22 +223,7 @@ private struct SectionCard: View {
             }
 
             if !section.limits.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(section.limits, id: \.text) { limit in
-                        HStack(alignment: .top, spacing: 6) {
-                            Text("•")
-                                .font(.callout)
-                                .foregroundColor(.secondary)
-
-                            Text(limit.text)
-                                .font(.callout)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)        // allow multi-line
-                                .frame(maxWidth: .infinity, alignment: .leading)     // take the available width
-                                .layoutPriority(1)                                   // don't let it get squeezed/truncated
-                        }
-                    }
-                }
+                LimitList(limits: section.limits, wrapForLongLines: true)
                 .padding(.top, 2)
             }
         }
@@ -446,10 +407,6 @@ private struct ProvenanceBlock: View {
         "first observed",
         "event identifier"
     ]
-
-    private func normalizedLabel(_ label: String) -> String {
-        label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    }
 
     private var quarantineFact: FactLine? {
         facts.first(where: { normalizedLabel($0.label) == "quarantine metadata" })
@@ -733,8 +690,42 @@ private struct FactRow: View {
 
 }
 
+private struct LimitList: View {
+    let limits: [LimitNote]
+    let wrapForLongLines: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(limits, id: \.text) { limit in
+                HStack(alignment: .top, spacing: 6) {
+                    Text("•")
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+
+                    if wrapForLongLines {
+                        Text(limit.text)
+                            .font(.callout)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .layoutPriority(1)
+                    } else {
+                        Text(limit.text)
+                            .font(.callout)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Shared pasteboard helper for row context menus in this file.
 private func copyToPasteboard(_ text: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(text, forType: .string)
+}
+
+private func normalizedLabel(_ label: String) -> String {
+    label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 }
