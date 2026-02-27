@@ -89,11 +89,10 @@ enum BundledStatus {
 /// Absence of quarantine metadata does not imply local origin
 /// or safety.
 enum QuarantineStatus {
-    case present
+    case present(details: QuarantineDetails)
     case absent
     case unknown(reason: String)
 }
-
 
 struct Visibility : OptionSet {
     let rawValue: Int

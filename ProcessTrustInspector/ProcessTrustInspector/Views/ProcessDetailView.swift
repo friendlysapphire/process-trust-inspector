@@ -217,7 +217,7 @@ private struct SectionCard: View {
         let normalized = section.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if normalized == "provenance" { return true }
         let labels = Set(section.facts.map { $0.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() })
-        return labels.contains("quarantine metadata") || labels.contains("gatekeeper relevance")
+        return labels.contains("quarantine metadata") || labels.contains("gatekeeper applicability")
     }
 
     var body: some View {
@@ -446,22 +446,50 @@ private enum ProvenanceStatus: Equatable {
 ///
 /// This block renders:
 /// - Quarantine metadata as an observed present/absent/unknown signal.
-/// - Gatekeeper checks as an inferred applicability note (unless unknown).
+/// - Gatekeeper applicability as an inferred note (unless unknown).
 ///
 /// It is intentionally conservative: it does not claim Gatekeeper actually ran,
 /// and it does not attempt notarization assessment.
 private struct ProvenanceBlock: View {
     let facts: [FactLine]
 
+    private let quarantineDetailLabels: Set<String> = [
+        "quarantine agent",
+        "first observed",
+        "event identifier"
+    ]
+
+    private func normalizedLabel(_ label: String) -> String {
+        label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
     private var quarantineFact: FactLine? {
-        facts.first(where: { $0.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "quarantine metadata" })
+        facts.first(where: { normalizedLabel($0.label) == "quarantine metadata" })
     }
 
     private var gatekeeperFact: FactLine? {
         facts.first(where: {
-            let k = $0.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            return k.contains("gatekeeper")
+            let k = normalizedLabel($0.label)
+            return k == "gatekeeper applicability" || k == "gatekeeper relevance"
         })
+    }
+
+    private var quarantineDetailFacts: [FactLine] {
+        facts.filter { quarantineDetailLabels.contains(normalizedLabel($0.label)) }
+    }
+
+    private var remainingFacts: [FactLine] {
+        var consumed = Set<UUID>()
+        if let quarantineFact {
+            consumed.insert(quarantineFact.id)
+        }
+        for fact in quarantineDetailFacts {
+            consumed.insert(fact.id)
+        }
+        if let gatekeeperFact {
+            consumed.insert(gatekeeperFact.id)
+        }
+        return facts.filter { !consumed.contains($0.id) }
     }
 
     var body: some View {
@@ -475,12 +503,23 @@ private struct ProvenanceBlock: View {
                 )
             }
 
+            // Group parsed quarantine fields under the main metadata row.
+            ForEach(quarantineDetailFacts) { fact in
+                FactRow(fact: fact)
+                    .padding(.leading, 28)
+            }
+
             // Gatekeeper: not directly observed in v1; treat as inferred applicability unless unknown
             if let gk = gatekeeperFact {
                 ProvenanceRow(
-                    label: "Gatekeeper checks",
+                    label: "Gatekeeper applicability",
                     status: gatekeeperStatus(from: gk)
                 )
+            }
+
+            // Render any additional facts generically so new provenance signals are not dropped.
+            ForEach(remainingFacts) { fact in
+                FactRow(fact: fact)
             }
         }
     }

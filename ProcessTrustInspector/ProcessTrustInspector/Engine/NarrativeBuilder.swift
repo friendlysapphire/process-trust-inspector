@@ -154,7 +154,7 @@ struct NarrativeBuilder {
                 return (nil, reason)
             }
         }
-
+        
         func gatekeeperRelevanceDisplay(from snapshot: ProcessSnapshot) -> (value: String?, unknownReason: String?) {
 
             // If quarantine is present, Gatekeeper relevance is straightforward.
@@ -430,7 +430,7 @@ struct NarrativeBuilder {
             case .parentNotVisible(let pid, _):
                 parentLine = FactLine(
                     label: "Parent process",
-                    value: "PID \(pid) (not visible in current scope",
+                    value: "PID \(pid) (not visible in current scope)",
                     unknownReason: nil
                 )
 
@@ -641,27 +641,64 @@ struct NarrativeBuilder {
         }()
 
         // MARK: - Provenance Section
+        var provenanceFacts: [FactLine] = [
+            {
+                let q = quarantineStatusDisplay(from: snapshot)
+                return FactLine(
+                    label: "Quarantine metadata",
+                    value: q.value,
+                    unknownReason: q.unknownReason
+                )
+            }()
+        ]
+
+        if case .present(let details) = snapshot.quarantineStatus {
+            if let agent = details.agentName, !agent.isEmpty {
+                provenanceFacts.append(
+                    FactLine(
+                        label: "Quarantine agent",
+                        value: agent,
+                        unknownReason: nil
+                    )
+                )
+            }
+
+            if let timestamp = details.timestamp {
+                provenanceFacts.append(
+                    FactLine(
+                        label: "First observed",
+                        value: timestamp.formatted(date: .abbreviated, time: .shortened),
+                        unknownReason: nil
+                    )
+                )
+            }
+
+            if let id = details.eventIdentifier, !id.isEmpty {
+                provenanceFacts.append(
+                    FactLine(
+                        label: "Event identifier",
+                        value: id,
+                        unknownReason: nil
+                    )
+                )
+            }
+        }
+
+        provenanceFacts.append(
+            {
+                let gk = gatekeeperRelevanceDisplay(from: snapshot)
+                return FactLine(
+                    label: "Gatekeeper applicability",
+                    value: gk.value,
+                    unknownReason: gk.unknownReason
+                )
+            }()
+        )
+
+        // MARK: - Provenance Section
         let provenance = NarrativeSection(
             title: "Provenance",
-            facts: [
-                {
-                    let q = quarantineStatusDisplay(from: snapshot)
-                    return FactLine(
-                        label: "Quarantine metadata",
-                        value: q.value,
-                        unknownReason: q.unknownReason
-                    )
-                }(),
-
-                {
-                    let gk = gatekeeperRelevanceDisplay(from: snapshot)
-                    return FactLine(
-                        label: "Gatekeeper applicability",
-                        value: gk.value,
-                        unknownReason: gk.unknownReason
-                    )
-                }()
-            ],
+            facts: provenanceFacts,
             interpretation: [
                 "These signals describe provenance and when Gatekeeper is more likely to evaluate an application at launch."
             ],

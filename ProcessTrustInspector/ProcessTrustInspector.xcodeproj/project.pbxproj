@@ -23,6 +23,7 @@
 		D9F819C32F2E9B1900AD18BA /* ProcessSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessSnapshot.swift; sourceTree = "<group>"; };
 		D9F819D12F2EA67900AD18BA /* CodeSigningInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSigningInspector.swift; sourceTree = "<group>"; };
 		D9F819DB2F2FE59B00AD18BA /* ProcessInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessInspector.swift; sourceTree = "<group>"; };
+		D9FF18542F5118D40059527A /* QuarantineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuarantineModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -86,6 +87,7 @@
 		D9F819BA2F2E98D900AD18BA /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				D9FF18542F5118D40059527A /* QuarantineModels.swift */,
 				D9A48EE42F4A442400DC6882 /* SecurityStatusExplainer.swift */,
 				D983F7342F4A22C900DE817F /* EngineNarrativeExport.swift */,
 				D9C76F422F3525BF005AA5C2 /* EngineNarrative.swift */,
