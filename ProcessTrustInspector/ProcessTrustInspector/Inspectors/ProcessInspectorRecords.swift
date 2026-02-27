@@ -29,7 +29,7 @@ struct BSDRecord {
     /// Longer name field if you choose to collect it (e.g. pbi_name).
     let longName: String?
 
-    // by definition this is coming from BSD visibility.
+    // Tracks source-layer visibility (currently unused in merge logic, kept for future use).
     let visibility: Visibility = [.procPidVis]
 }
 
@@ -54,6 +54,6 @@ struct NSWorkspaceRecord {
     /// Launch date reported by NSRunningApplication.
     let startTime: Date?
 
-    // by definition this is coming from NSWorkspace visibility.
+    // Tracks source-layer visibility (currently unused in merge logic, kept for future use).
     let visibility: Visibility = [.nsWorkspaceVis]
 }

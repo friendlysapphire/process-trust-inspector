@@ -128,6 +128,7 @@ struct ContentView: View {
         }
     }
 
+    /// Clears the detail pane if current filters/search remove the selected process.
     private func clearSelectionIfHidden() {
         guard let pid = engine.selectedPID else { return }
         if !visibleProcesses.contains(where: { $0.pid == pid }) {

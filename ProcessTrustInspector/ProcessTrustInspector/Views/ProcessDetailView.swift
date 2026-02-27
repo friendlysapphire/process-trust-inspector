@@ -733,6 +733,7 @@ private struct FactRow: View {
 
 }
 
+/// Shared pasteboard helper for row context menus in this file.
 private func copyToPasteboard(_ text: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(text, forType: .string)

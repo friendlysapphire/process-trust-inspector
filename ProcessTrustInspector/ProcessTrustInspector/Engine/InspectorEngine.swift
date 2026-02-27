@@ -69,7 +69,7 @@ final class InspectorEngine {
 
     // MARK: - Inspectors
 
-    /// Inspectors for looking into data structures
+    /// Inspectors used to collect and enrich process metadata.
     private let processInspector = ProcessInspector()
 
     /// Helper responsible for extracting static code-signing identity
@@ -79,7 +79,7 @@ final class InspectorEngine {
     /// Helper responsible for inspecting quarantine metadata on executables.
     private let quarantineInspector = QuarantineInspector()
 
-    // builds narrative structures for UI
+    /// Builds user-facing narrative sections from snapshots.
     private let narrativeBuilder = NarrativeBuilder()
 
     /// Selects a process by PID and updates the UI-facing state for the detail pane.
@@ -100,8 +100,7 @@ final class InspectorEngine {
                                                         getParentSnapshotInfo(childSnapshot: snapshot))
     }
 
-    /// takes a process snapshot and returns ParentProcessInfo enum modeling
-    /// info about its parent process
+    /// Resolves what we currently know about the selected process's parent.
     func getParentSnapshotInfo(childSnapshot: ProcessSnapshot) -> ParentProcessInfo {
        
         // validate the snapshot contains a parent pid, if not all we know is it's unavailable for
@@ -150,8 +149,7 @@ final class InspectorEngine {
         // will expose to the UI as self.processes array.
         var masterFinalPidDict: [pid_t : ProcessSnapshot] = [:]
         
-        // for each element in the BSD dict, constuct a ProcessSnapshot and fill based on best values
-        // set self.processes to Array(bsdpiddict.values)
+        // Build merged snapshots using BSD as the base and NSWorkspace as overlay.
         
         let bsdPidDict = processInspector.getBSDSnapshots()
         
